@@ -1,7 +1,7 @@
 {
 	"name": "financy",
-	"version": "1.0.0",
 	"private": true,
+	"version": "1.0.0",
 	"scripts": {
 		"dev": "pnpm --parallel --filter \"./backend\" --filter \"./frontend\" run dev",
 		"dev:backend": "pnpm --filter ./backend run dev",
