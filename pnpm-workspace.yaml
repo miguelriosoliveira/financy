@@ -1,6 +1,7 @@
 allowBuilds:
-  '@apollo/protobufjs': true
-  esbuild: true
+  '@prisma/engines': true
+  better-sqlite3: true
+  prisma: true
 
 packages:
   - 'backend'
