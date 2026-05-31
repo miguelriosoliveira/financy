@@ -24,7 +24,7 @@ main()
 	.then(async () => {
 		await dbClient.disconnect();
 	})
-	.catch(async (e) => {
+	.catch(async e => {
 		console.error(e);
 		await dbClient.disconnect();
 		process.exit(1);
@@ -73,17 +73,12 @@ const resolvers = {
 
 // The ApolloServer constructor requires two parameters: your schema
 // definition and your set of resolvers.
-const server = new ApolloServer({
-	typeDefs,
-	resolvers,
-});
+const server = new ApolloServer({ typeDefs, resolvers });
 
 // Passing an ApolloServer instance to the `startStandaloneServer` function:
 //  1. creates an Express app
 //  2. installs your ApolloServer instance as middleware
 //  3. prepares your app to handle incoming requests
-const { url } = await startStandaloneServer(server, {
-	listen: { port: env.PORT },
-});
+const { url } = await startStandaloneServer(server, { listen: { port: env.PORT } });
 
 console.log(`🚀 Server ready at: ${url}`);

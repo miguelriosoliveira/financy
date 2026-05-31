@@ -3,9 +3,5 @@
 		"@tsconfig/node-lts/tsconfig.json",
 		"@tsconfig/node-ts/tsconfig.json"
 	],
-	"compilerOptions": {
-		"outDir": "./dist",
-		"rootDir": "./src"
-	},
-	"include": ["src/**/*"]
+	"include": ["src/**/*", "prisma.config.ts"]
 }

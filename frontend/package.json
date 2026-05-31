@@ -9,9 +9,11 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
+		"@apollo/client": "^4.2.0",
 		"@financy/shared": "workspace:*",
 		"react": "^19.2.6",
-		"react-dom": "^19.2.6"
+		"react-dom": "^19.2.6",
+		"rxjs": "^7.8.2"
 	},
 	"devDependencies": {
 		"@tsconfig/vite-react": "^8.0.6",
