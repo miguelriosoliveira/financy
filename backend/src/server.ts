@@ -1,84 +1,22 @@
+import 'reflect-metadata';
 import { ApolloServer } from '@apollo/server';
-import { startStandaloneServer } from '@apollo/server/standalone';
-import { PrismaDbClient } from './db/PrismaDbClient.ts';
+import { expressMiddleware } from '@as-integrations/express5';
+import cors from 'cors';
+import express from 'express';
+import { buildSchema } from 'type-graphql';
 import { env } from './env.ts';
+import { AuthResolver } from './resolvers/auth.resolver.ts';
 
-const dbClient = new PrismaDbClient();
+const app = express();
+const server = new ApolloServer({
+	schema: await buildSchema({
+		resolvers: [AuthResolver],
+		validate: false,
+		emitSchemaFile: './schema.graphql',
+	}),
+});
+await server.start();
 
-async function main() {
-	await dbClient.connect();
-	// const user = await dbClient.client.user.create({
-	// 	data: {
-	// 		name: 'Alice',
-	// 		email: 'alice@prisma.iooo',
-	// 		password: 'supersecret',
-	// 	},
-	// });
-	// console.log('Created user:', user);
+app.use('/graphql', cors(), express.json(), expressMiddleware(server));
 
-	const allUsers = await dbClient.client.user.findMany();
-	console.log('All users:', JSON.stringify(allUsers, null, 2));
-}
-
-main()
-	.then(async () => {
-		await dbClient.disconnect();
-	})
-	.catch(async e => {
-		console.error(e);
-		await dbClient.disconnect();
-		process.exit(1);
-	});
-
-console.log({ env });
-
-// A schema is a collection of type definitions (hence "typeDefs")
-// that together define the "shape" of queries that are executed against
-// your data.
-const typeDefs = `#graphql
-  # Comments in GraphQL strings (such as this one) start with the hash (#) symbol.
-
-  # This "Book" type defines the queryable fields for every book in our data source.
-  type Book {
-    title: String
-    author: String
-  }
-
-  # The "Query" type is special: it lists all of the available queries that
-  # clients can execute, along with the return type for each. In this
-  # case, the "books" query returns an array of zero or more Books (defined above).
-  type Query {
-    books: [Book]
-  }
-`;
-
-const books = [
-	{
-		title: 'The Awakening',
-		author: 'Kate Chopin',
-	},
-	{
-		title: 'City of Glass',
-		author: 'Paul Auster',
-	},
-];
-
-// Resolvers define how to fetch the types defined in your schema.
-// This resolver retrieves books from the "books" array above.
-const resolvers = {
-	Query: {
-		books: () => books,
-	},
-};
-
-// The ApolloServer constructor requires two parameters: your schema
-// definition and your set of resolvers.
-const server = new ApolloServer({ typeDefs, resolvers });
-
-// Passing an ApolloServer instance to the `startStandaloneServer` function:
-//  1. creates an Express app
-//  2. installs your ApolloServer instance as middleware
-//  3. prepares your app to handle incoming requests
-const { url } = await startStandaloneServer(server, { listen: { port: env.PORT } });
-
-console.log(`🚀 Server ready at: ${url}`);
+app.listen(env.PORT, () => console.log(`🚀 Server ready at: http://localhost:${env.PORT}/graphql`));

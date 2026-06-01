@@ -4,7 +4,8 @@ CREATE TABLE "User" (
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "name" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
 );
 
 -- CreateTable
