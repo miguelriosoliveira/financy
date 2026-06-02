@@ -1,9 +1,12 @@
 import type { RegisterInput } from '../dtos/input/auth.input.ts';
 import type { RegisterOutput } from '../dtos/output/auth.output.ts';
 import type { UserModel } from '../models/user.model.ts';
+import type { UserRepository } from '../repositories/user-repository.ts';
 import { signJwt } from '../utils/jwt.ts';
 
 export class AuthService {
+	constructor(private readonly userRepository: UserRepository) {}
+
 	private generateTokens(user: UserModel) {
 		const { id, email } = user;
 		const token = signJwt({ id, email }, 60 * 15); // 15min in seconds
@@ -11,16 +14,12 @@ export class AuthService {
 		return { token, refreshToken, user };
 	}
 
-	async register(data: RegisterInput): Promise<RegisterOutput> {
-		const userFound = await userRepository.findBy({ email: data.email });
+	async register({ name, email, password }: RegisterInput): Promise<RegisterOutput> {
+		const userFound = await this.userRepository.findByEmail(email);
 		if (userFound) {
-			throw new Error('User already registered!');
+			throw new Error('User already registered');
 		}
-		const user = userRepository.create({
-			name: data.name,
-			email: data.email,
-			password: data.password,
-		});
+		const user = await this.userRepository.create({ name, email, password });
 		return this.generateTokens(user);
 	}
 }

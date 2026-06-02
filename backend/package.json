@@ -4,7 +4,7 @@
 	"version": "1.0.0",
 	"type": "module",
 	"scripts": {
-		"dev": "tsx watch --env-file=.env --watch src/server.ts",
+		"dev": "tsx watch --env-file=.env src/server.ts",
 		"build": "tsdown src/server.ts",
 		"start": "node --env-file-if-exists=.env dist/server.mjs",
 		"test": "echo \"Error: no test specified\" && exit 1",

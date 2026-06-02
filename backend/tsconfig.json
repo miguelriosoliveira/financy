@@ -6,6 +6,7 @@
 	"include": ["src/**/*", "prisma.config.ts"],
 	"compilerOptions": {
 		"experimentalDecorators": true,
-		"emitDecoratorMetadata": true
+		"emitDecoratorMetadata": true,
+		"erasableSyntaxOnly": false
 	}
 }

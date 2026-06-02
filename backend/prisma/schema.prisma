@@ -8,28 +8,28 @@ datasource db {
 }
 
 model User {
-  id           Int           @id @default(autoincrement())
+  id           String        @id @default(uuid())
   email        String        @unique
   password     String
-  name         String?
+  name         String
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   transactions Transaction[]
 }
 
 model Category {
-  id           Int           @id @default(autoincrement())
+  id           String        @id @default(uuid())
   name         String        @unique
   transactions Transaction[]
 }
 
 model Transaction {
-  id          Int      @id @default(autoincrement())
+  id          String   @id @default(uuid())
   amount      Float
   description String?
   date        DateTime @default(now())
-  categoryId  Int
+  categoryId  String
   category    Category @relation(fields: [categoryId], references: [id])
-  userId      Int
+  userId      String
   user        User     @relation(fields: [userId], references: [id])
 }
