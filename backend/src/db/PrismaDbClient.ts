@@ -1,7 +1,7 @@
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { env } from '../env.ts';
-import { PrismaClient } from '../generated/prisma/client.ts';
 import type { UserModel } from '../models/user.model.ts';
+import { PrismaClient } from '../prisma/generated/client.ts';
 import type { DbClient } from './DbClient.ts';
 import type { DbUserClient, UserCreateProps } from './DbUserClient.ts';
 
