@@ -1,7 +1,7 @@
 import type { RegisterInput } from '../dtos/input/auth.input.ts';
 import type { RegisterOutput } from '../dtos/output/auth.output.ts';
 import type { UserModel } from '../models/user.model.ts';
-import type { UserRepository } from '../repositories/user-repository.ts';
+import type { UserRepository } from '../repositories/user.repository.ts';
 import type { HashService } from './hash.service.ts';
 import type { JwtService } from './jwt.service.ts';
 

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, type Mocked } from 'vitest';
 import type { UserModel } from '../models/user.model.ts';
-import type { UserRepository } from '../repositories/user-repository.ts';
+import type { UserRepository } from '../repositories/user.repository.ts';
 import { mockOf } from '../tests/helpers/mocks.ts';
 import { UserService } from './user.service.ts';
 

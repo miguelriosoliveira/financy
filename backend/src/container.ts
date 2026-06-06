@@ -1,5 +1,5 @@
 import { PrismaDbClient } from './db/prisma-db-client.ts';
-import { DbUserRepository } from './repositories/user-repository.ts';
+import { DbUserRepository } from './repositories/user.repository.ts';
 import { AuthResolver } from './resolvers/auth.resolver.ts';
 import { UserResolver } from './resolvers/user.resolver.ts';
 import { AuthService } from './services/auth.service.ts';
