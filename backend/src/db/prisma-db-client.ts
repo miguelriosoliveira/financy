@@ -2,8 +2,8 @@ import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { env } from '../env.ts';
 import type { UserModel } from '../models/user.model.ts';
 import { PrismaClient } from '../prisma/generated/client.ts';
-import type { DbClient } from './DbClient.ts';
-import type { DbUserClient, UserCreateProps } from './DbUserClient.ts';
+import type { DbClient } from './db-client.interface.ts';
+import type { DbUserClient, UserCreateProps } from './db-user-client.interface.ts';
 
 export class PrismaDbClient implements DbClient, DbUserClient {
 	client: PrismaClient;

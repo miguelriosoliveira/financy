@@ -1,3 +1,4 @@
 {
-	"cSpell.words": ["dtos", "financy"]
+	"cSpell.words": ["dtos", "financy"],
+	"editor.defaultFormatter": "biomejs.biome"
 }

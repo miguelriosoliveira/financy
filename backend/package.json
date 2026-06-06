@@ -7,7 +7,11 @@
 		"dev": "tsx watch --env-file=.env src/server.ts",
 		"build": "tsdown src/server.ts",
 		"start": "node --env-file-if-exists=.env dist/server.mjs",
-		"test": "echo \"Error: no test specified\" && exit 1",
+		"test": "vitest run",
+		"test:unit": "vitest run --project unit",
+		"test:integration": "vitest run --project integration",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage",
 		"db:generate": "prisma generate",
 		"db:migrate": "prisma migrate dev",
 		"db:studio": "prisma studio"
@@ -34,8 +38,12 @@
 		"@types/express": "^5.0.6",
 		"@types/jsonwebtoken": "^9.0.10",
 		"@types/node": "^25.9.1",
+		"@types/supertest": "^7.2.0",
+		"@vitest/coverage-v8": "^4.1.8",
 		"prisma": "^7.8.0",
+		"supertest": "^7.2.2",
 		"tsdown": "^0.22.0",
-		"tsx": "^4.22.3"
+		"tsx": "^4.22.3",
+		"vitest": "^4.1.8"
 	}
 }
