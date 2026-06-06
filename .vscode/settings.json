@@ -1,4 +1,6 @@
 {
-	"cSpell.words": ["dtos", "financy"],
-	"editor.defaultFormatter": "biomejs.biome"
+	"cSpell.words": ["dtos", "financy", "tailwindcss"],
+	"css.customData": [".vscode/css-custom-data.json"],
+	"editor.defaultFormatter": "biomejs.biome",
+	"editor.foldingImportsByDefault": false
 }

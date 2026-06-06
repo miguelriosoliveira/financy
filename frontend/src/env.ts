@@ -4,4 +4,4 @@ export const env = z
 	.object({
 		VITE_BACKEND_URL: z.url(),
 	})
-	.parse(process.env);
+	.parse(import.meta.env);
