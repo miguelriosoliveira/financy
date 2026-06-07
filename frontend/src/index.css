@@ -6,6 +6,13 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+	/* Sizing */
+	--input-height: 3rem; /* 48px */
+	--input-padding-x: 0.75rem; /* 12px */
+	--input-padding-y: 0.875rem; /* 14px */
+	--button-padding-x: 1rem; /* 16px */
+	--button-padding-y: 0.75rem; /* 12px */
+
 	/* Brand */
 	--color-brand-dark: #124b2b;
 	--color-brand-base: #1f6f43;
