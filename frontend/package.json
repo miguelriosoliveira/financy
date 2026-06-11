@@ -19,6 +19,7 @@
 		"react": "^19.2.6",
 		"react-dom": "^19.2.6",
 		"react-router": "^7.17.0",
+		"react-toastify": "^11.1.0",
 		"rxjs": "^7.8.2",
 		"shadcn": "^4.10.0",
 		"tailwind-merge": "^3.6.0",
