@@ -17,7 +17,7 @@ createRoot(document.getElementById('root')!).render(
 	<StrictMode>
 		<ApolloProvider client={apolloClient}>
 			<Router />
-			<ToastContainer />
+			<ToastContainer position="bottom-right" newestOnTop closeOnClick theme="colored" />
 		</ApolloProvider>
 	</StrictMode>,
 );

@@ -1,5 +1,6 @@
 import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
+import { registerSchema } from '@financy/shared';
 import {
 	EyeClosedIcon,
 	EyeIcon,
@@ -17,6 +18,7 @@ import { Card, CardContent } from '../components/ui/card';
 import {
 	Field,
 	FieldDescription,
+	FieldError,
 	FieldGroup,
 	FieldLabel,
 	FieldLegend,
@@ -39,11 +41,18 @@ const REGISTER = gql`
 	}
 `;
 
+const REGISTER_FIELD_MESSAGES: Record<'name' | 'email' | 'password', string> = {
+	name: 'Informe seu nome completo',
+	email: 'Informe um e-mail válido',
+	password: 'A senha deve ter no mínimo 8 caracteres',
+};
+
 export function RegisterPage() {
 	const [showPassword, setShowPassword] = useState(false);
 	const [name, setName] = useState('');
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
+	const [errors, setErrors] = useState<Partial<Record<'name' | 'email' | 'password', string>>>({});
 	const navigate = useNavigate();
 	const [register, { loading }] = useMutation(REGISTER);
 
@@ -53,12 +62,24 @@ export function RegisterPage() {
 
 	function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
 		event.preventDefault();
-		register({ variables: { data: { name, email, password } } })
+		const result = registerSchema.safeParse({ name, email, password });
+		if (!result.success) {
+			const fieldErrors = result.error.flatten().fieldErrors;
+			setErrors({
+				...(fieldErrors.name && { name: REGISTER_FIELD_MESSAGES.name }),
+				...(fieldErrors.email && { email: REGISTER_FIELD_MESSAGES.email }),
+				...(fieldErrors.password && { password: REGISTER_FIELD_MESSAGES.password }),
+			});
+			return;
+		}
+		setErrors({});
+		register({ variables: { data: result.data } })
 			.then(() => {
 				toast.success('Usuário cadastrado com sucesso');
 				navigate('/login');
 			})
-			.catch(() => {
+			.catch(error => {
+				console.error(error);
 				toast.error('Erro ao cadastrar usuário');
 			});
 	}
@@ -90,6 +111,7 @@ export function RegisterPage() {
 										<UserRoundIcon />
 									</InputGroupAddon>
 								</InputGroup>
+								<FieldError>{errors.name}</FieldError>
 							</Field>
 
 							<Field>
@@ -106,6 +128,7 @@ export function RegisterPage() {
 										<MailIcon />
 									</InputGroupAddon>
 								</InputGroup>
+								<FieldError>{errors.email}</FieldError>
 							</Field>
 
 							<Field>
@@ -127,9 +150,13 @@ export function RegisterPage() {
 										</InputGroupButton>
 									</InputGroupAddon>
 								</InputGroup>
-								<FieldDescription className="text-xs">
-									A senha deve ter no mínimo 8 caracteres
-								</FieldDescription>
+								{errors.password ? (
+									<FieldError>{errors.password}</FieldError>
+								) : (
+									<FieldDescription className="text-xs">
+										A senha deve ter no mínimo 8 caracteres
+									</FieldDescription>
+								)}
 							</Field>
 
 							<Field>

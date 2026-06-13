@@ -71,4 +71,36 @@ describe('Auth (integration)', () => {
 		const all = await ctx.dbClient.client.user.findMany({ where: { email: data.email } });
 		expect(all).toHaveLength(1);
 	});
+
+	it.each([
+		{
+			label: 'empty name',
+			data: { name: '', email: 'ada@example.com', password: 'secret123' },
+			field: 'name',
+		},
+		{
+			label: 'invalid email',
+			data: { name: 'Ada Lovelace', email: 'not-an-email', password: 'secret123' },
+			field: 'email',
+		},
+		{
+			label: 'short password',
+			data: { name: 'Ada Lovelace', email: 'ada@example.com', password: 'short' },
+			field: 'password',
+		},
+	])('rejects registration with $label', async ({ data, field }) => {
+		const response = await request(ctx.app)
+			.post('/graphql')
+			.send({ query: REGISTER, variables: { data } });
+
+		expect(response.status).toBe(200);
+		expect(response.body.errors).toBeDefined();
+		expect(response.body.errors[0].message).toBe('Validation failed');
+		expect(response.body.errors[0].extensions?.code).toBe('BAD_USER_INPUT');
+		expect(response.body.errors[0].extensions?.issues?.[field]).toBeDefined();
+		expect(response.body.data).toBeNull();
+
+		const stored = await ctx.dbClient.findByEmail(data.email);
+		expect(stored).toBeNull();
+	});
 });
