@@ -1,5 +1,12 @@
 {
-	"cSpell.words": ["dtos", "financy", "fontsource", "shadcn", "tailwindcss"],
+	"cSpell.words": [
+		"dtos",
+		"financy",
+		"fontsource",
+		"shadcn",
+		"tailwindcss",
+		"treeify"
+	],
 	"css.customData": [".vscode/css-custom-data.json"],
 	"editor.defaultFormatter": "biomejs.biome",
 	"editor.foldingImportsByDefault": false
