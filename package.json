@@ -6,10 +6,12 @@
 		"dev": "pnpm --parallel --filter \"./backend\" --filter \"./frontend\" run dev",
 		"dev:backend": "pnpm --filter ./backend run dev",
 		"dev:frontend": "pnpm --filter ./frontend run dev",
-		"lint": "biome check --write ."
+		"lint": "biome check --write .",
+		"prepare": "husky"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.16",
+		"husky": "^9.1.7",
 		"typescript": "^6.0.3"
 	}
 }
