@@ -1,101 +1,127 @@
+import { gql } from '@apollo/client';
+import { useMutation } from '@apollo/client/react';
+import { loginSchema } from '@financy/shared';
 import { EyeClosedIcon, EyeIcon, LockIcon, MailIcon, UserRoundPlusIcon } from 'lucide-react';
-import { useState } from 'react';
+import { type SubmitEvent, useState } from 'react';
+import { useNavigate } from 'react-router';
+import { toast } from 'react-toastify';
+import z from 'zod';
+import { Form } from '@/components/form';
+import { FormField } from '@/components/form-field';
 import { Button } from '../components/ui/button';
-import { Card, CardContent } from '../components/ui/card';
 import { Checkbox } from '../components/ui/checkbox';
-import {
-	Field,
-	FieldDescription,
-	FieldGroup,
-	FieldLabel,
-	FieldLegend,
-	FieldSeparator,
-	FieldSet,
-} from '../components/ui/field';
-import {
-	InputGroup,
-	InputGroupAddon,
-	InputGroupButton,
-	InputGroupInput,
-} from '../components/ui/input-group';
+import { Field, FieldLabel, FieldSeparator } from '../components/ui/field';
+
+const LOGIN = gql`
+	mutation Login($data: LoginInput!) {
+		login(data: $data) {
+			token
+			refreshToken
+		}
+	}
+`;
+
+const LOGIN_FIELD_MESSAGES: Record<'email' | 'password', string> = {
+	email: 'Informe um e-mail válido',
+	password: 'Informe uma senha válida',
+};
 
 export function LoginPage() {
 	const [showPassword, setShowPassword] = useState(false);
+	const [email, setEmail] = useState('');
+	const [password, setPassword] = useState('');
+	const [errors, setErrors] = useState<Partial<Record<'email' | 'password', string>>>({});
+	const [login, { loading }] = useMutation(LOGIN);
+	const navigate = useNavigate();
 
 	function togglePasswordVisibility() {
 		setShowPassword(showPassword => !showPassword);
 	}
 
+	function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+		event.preventDefault();
+		const result = loginSchema.safeParse({ email, password });
+		if (!result.success) {
+			const fieldErrors = z.treeifyError(result.error).properties;
+			setErrors({
+				...(fieldErrors?.email && { email: LOGIN_FIELD_MESSAGES.email }),
+				...(fieldErrors?.password && { password: LOGIN_FIELD_MESSAGES.password }),
+			});
+			return;
+		}
+		setErrors({});
+		login({ variables: { data: result.data } })
+			.then(() => {
+				toast.success('Login realizado com sucesso');
+				navigate('/');
+			})
+			.catch(error => {
+				console.error(error);
+				toast.error('Erro ao fazer login');
+			});
+	}
+
+	const fieldset = (
+		<>
+			<FormField
+				label="E-mail"
+				id="email"
+				type="email"
+				placeholder="mail@examplo.com"
+				value={email}
+				onChange={e => setEmail(e.target.value)}
+				error={errors.email}
+				icon={<MailIcon />}
+			/>
+
+			<FormField
+				label="Senha"
+				id="password"
+				type={showPassword ? 'text' : 'password'}
+				placeholder="Digite sua senha"
+				value={password}
+				onChange={e => setPassword(e.target.value)}
+				error={errors.password}
+				icon={<LockIcon />}
+				rightIcon={showPassword ? <EyeIcon /> : <EyeClosedIcon />}
+				rightIconClick={togglePasswordVisibility}
+			/>
+
+			<div className="flex justify-between">
+				<Field orientation="horizontal" className="w-fit">
+					<Checkbox id="remember" />
+					<FieldLabel htmlFor="remember">Lembrar-me</FieldLabel>
+				</Field>
+				<a href="/forgot-password" className="text-brand-base hover:underline">
+					Recuperar senha
+				</a>
+			</div>
+		</>
+	);
+
+	const afterSubmitButton = (
+		<>
+			<FieldSeparator>ou</FieldSeparator>
+
+			<div className="text-center text-gray-600">Ainda não tem uma conta?</div>
+
+			<Button type="button" variant="outline" className="hover:bg-gray-200" asChild>
+				<a href="/register">
+					<UserRoundPlusIcon /> Criar conta
+				</a>
+			</Button>
+		</>
+	);
+
 	return (
-		<Card className="w-full max-w-md [--card-spacing:--spacing(8)]">
-			<CardContent>
-				<form>
-					<FieldGroup>
-						<FieldSet>
-							<FieldLegend className="text-center">
-								<span className="text-xl font-bold text-gray-800">Fazer login</span>
-							</FieldLegend>
-							<FieldDescription className="text-center text-base text-gray-600">
-								Entre na sua conta para continuar
-							</FieldDescription>
-
-							<Field>
-								<FieldLabel htmlFor="email">E-mail</FieldLabel>
-								<InputGroup>
-									<InputGroupInput type="email" id="email" placeholder="mail@examplo.com" />
-									<InputGroupAddon>
-										<MailIcon />
-									</InputGroupAddon>
-								</InputGroup>
-							</Field>
-
-							<Field>
-								<FieldLabel htmlFor="password">Senha</FieldLabel>
-								<InputGroup>
-									<InputGroupInput
-										type={showPassword ? 'text' : 'password'}
-										id="password"
-										placeholder="Digite sua senha"
-									/>
-									<InputGroupAddon>
-										<LockIcon />
-									</InputGroupAddon>
-									<InputGroupAddon align="inline-end">
-										<InputGroupButton className="text-gray-700" onClick={togglePasswordVisibility}>
-											{showPassword ? <EyeIcon /> : <EyeClosedIcon />}
-										</InputGroupButton>
-									</InputGroupAddon>
-								</InputGroup>
-							</Field>
-
-							<div className="flex justify-between">
-								<Field orientation="horizontal" className="w-fit">
-									<Checkbox id="remember" />
-									<FieldLabel htmlFor="remember">Lembrar-me</FieldLabel>
-								</Field>
-								<a href="/forgot-password" className="text-brand-base hover:underline">
-									Recuperar senha
-								</a>
-							</div>
-
-							<Field>
-								<Button type="submit" className="bg-brand-base hover:bg-brand-dark">
-									Entrar
-								</Button>
-							</Field>
-
-							<FieldSeparator>ou</FieldSeparator>
-
-							<div className="text-center text-gray-600">Ainda não tem uma conta?</div>
-							<Button type="button" variant="outline" className="hover:bg-gray-200" asChild>
-								<a href="/register">
-									<UserRoundPlusIcon /> Criar conta
-								</a>
-							</Button>
-						</FieldSet>
-					</FieldGroup>
-				</form>
-			</CardContent>
-		</Card>
+		<Form
+			title="Fazer login"
+			description="Entre na sua conta para continuar"
+			submitButtonText="Entrar"
+			fieldset={fieldset}
+			loading={loading}
+			handleSubmit={handleSubmit}
+			afterSubmitButton={afterSubmitButton}
+		/>
 	);
 }

@@ -9,7 +9,6 @@ import z from 'zod';
 import { Form } from '@/components/form';
 import { FormField } from '@/components/form-field';
 import { Button } from '../components/ui/button';
-import { Card, CardContent } from '../components/ui/card';
 import { FieldSeparator } from '../components/ui/field';
 
 const REGISTER = gql`
@@ -118,18 +117,14 @@ export function RegisterPage() {
 	);
 
 	return (
-		<Card className="w-full max-w-md [--card-spacing:--spacing(8)]">
-			<CardContent>
-				<Form
-					title="Criar conta"
-					description="Comece a controlar suas finanças ainda hoje"
-					submitButtonText="Cadastrar"
-					fieldset={fieldset}
-					loading={loading}
-					handleSubmit={handleSubmit}
-					afterSubmitButton={afterSubmitButton}
-				/>
-			</CardContent>
-		</Card>
+		<Form
+			title="Criar conta"
+			description="Comece a controlar suas finanças ainda hoje"
+			submitButtonText="Cadastrar"
+			fieldset={fieldset}
+			loading={loading}
+			handleSubmit={handleSubmit}
+			afterSubmitButton={afterSubmitButton}
+		/>
 	);
 }
