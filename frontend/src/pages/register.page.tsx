@@ -46,9 +46,9 @@ export function RegisterPage() {
 		if (!result.success) {
 			const fieldErrors = z.treeifyError(result.error).properties;
 			setErrors({
-				...(fieldErrors.name && { name: REGISTER_FIELD_MESSAGES.name }),
-				...(fieldErrors.email && { email: REGISTER_FIELD_MESSAGES.email }),
-				...(fieldErrors.password && { password: REGISTER_FIELD_MESSAGES.password }),
+				...(fieldErrors?.name && { name: REGISTER_FIELD_MESSAGES.name }),
+				...(fieldErrors?.email && { email: REGISTER_FIELD_MESSAGES.email }),
+				...(fieldErrors?.password && { password: REGISTER_FIELD_MESSAGES.password }),
 			});
 			return;
 		}

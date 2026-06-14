@@ -7,13 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      graphql:
-        specifier: ^16.14.0
-        version: 16.14.2
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
     devDependencies:
       '@biomejs/biome':
         specifier: ^2.4.16
@@ -127,6 +120,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      graphql:
+        specifier: ^16.14.2
+        version: 16.14.2
       lucide-react:
         specifier: ^1.17.0
         version: 1.18.0(react@19.2.7)
@@ -157,6 +153,9 @@ importers:
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@tailwindcss/vite':
         specifier: ^4.3.0

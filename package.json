@@ -8,10 +8,6 @@
 		"dev:frontend": "pnpm --filter ./frontend run dev",
 		"lint": "biome check --write ."
 	},
-	"dependencies": {
-		"graphql": "^16.14.0",
-		"zod": "^4.4.3"
-	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.16",
 		"typescript": "^6.0.3"
