@@ -22,7 +22,7 @@ export function Form({
 	handleSubmit,
 }: Props) {
 	return (
-		<form onSubmit={handleSubmit}>
+		<form noValidate onSubmit={handleSubmit}>
 			<FieldGroup>
 				<FieldSet>
 					<FieldLegend className="text-center">
