@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import z from 'zod';
 import { Form } from '@/components/form';
 import { FormField } from '@/components/form-field';
+import { setTokens } from '@/lib/auth';
 import { Button } from '../components/ui/button';
 import { Checkbox } from '../components/ui/checkbox';
 import { Field, FieldLabel, FieldSeparator } from '../components/ui/field';
@@ -26,12 +27,19 @@ const LOGIN_FIELD_MESSAGES: Record<'email' | 'password', string> = {
 	password: 'Informe uma senha válida',
 };
 
+type LoginMutationResult = {
+	login?: {
+		token: string;
+		refreshToken: string;
+	};
+};
+
 export function LoginPage() {
 	const [showPassword, setShowPassword] = useState(false);
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [errors, setErrors] = useState<Partial<Record<'email' | 'password', string>>>({});
-	const [login, { loading }] = useMutation(LOGIN);
+	const [login, { loading }] = useMutation<LoginMutationResult>(LOGIN);
 	const navigate = useNavigate();
 
 	function togglePasswordVisibility() {
@@ -51,7 +59,11 @@ export function LoginPage() {
 		}
 		setErrors({});
 		login({ variables: { data: result.data } })
-			.then(() => {
+			.then(({ data }) => {
+				const loginResult = data?.login;
+				if (loginResult?.token && loginResult?.refreshToken) {
+					setTokens(loginResult.token, loginResult.refreshToken);
+				}
 				toast.success('Login realizado com sucesso');
 				navigate('/');
 			})

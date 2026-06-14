@@ -3,6 +3,7 @@ import type { MockLink } from '@apollo/client/testing';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { clearTokens, getToken, setTokens } from '@/lib/auth';
 import { renderWithProviders } from '@/tests/helpers/render';
 import { RegisterPage } from './register.page';
 
@@ -92,6 +93,7 @@ async function fillRegistrationForm(data: { name: string; email: string; passwor
 describe('RegisterPage', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		clearTokens();
 	});
 
 	it('renders the registration form fields and submit button', () => {
@@ -171,7 +173,9 @@ describe('RegisterPage', () => {
 		expect(mockToastError).not.toHaveBeenCalled();
 	});
 
-	it('registers a new user and redirects to login', async () => {
+	it('registers a new user, clears stored tokens, and redirects to login', async () => {
+		setTokens('stale-token', 'stale-refresh-token');
+
 		renderWithProviders(<RegisterPage />, {
 			mocks: [
 				createRegisterSuccessMock({
@@ -194,6 +198,7 @@ describe('RegisterPage', () => {
 			expect(mockToastSuccess).toHaveBeenCalledWith('Usuário cadastrado com sucesso');
 		});
 
+		expect(getToken()).toBeNull();
 		expect(mockNavigate).toHaveBeenCalledWith('/login');
 		expect(mockToastError).not.toHaveBeenCalled();
 	});

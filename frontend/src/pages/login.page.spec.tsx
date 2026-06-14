@@ -3,6 +3,7 @@ import type { MockLink } from '@apollo/client/testing';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { clearTokens, getToken } from '@/lib/auth';
 import { renderWithProviders } from '@/tests/helpers/render';
 import { LoginPage } from './login.page';
 
@@ -87,6 +88,7 @@ async function fillLoginForm(data: { email: string; password: string }) {
 describe('LoginPage', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		clearTokens();
 	});
 
 	it('renders the login form fields and submit button', () => {
@@ -173,6 +175,7 @@ describe('LoginPage', () => {
 			expect(mockToastSuccess).toHaveBeenCalledWith('Login realizado com sucesso');
 		});
 
+		expect(getToken()).toBe('access-token');
 		expect(mockNavigate).toHaveBeenCalledWith('/');
 		expect(mockToastError).not.toHaveBeenCalled();
 	});

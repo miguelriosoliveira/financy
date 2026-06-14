@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import z from 'zod';
 import { Form } from '@/components/form';
 import { FormField } from '@/components/form-field';
+import { clearTokens } from '@/lib/auth';
 import { Button } from '../components/ui/button';
 import { FieldSeparator } from '../components/ui/field';
 
@@ -54,6 +55,7 @@ export function RegisterPage() {
 		setErrors({});
 		register({ variables: { data: result.data } })
 			.then(() => {
+				clearTokens();
 				toast.success('Usuário cadastrado com sucesso');
 				navigate('/login');
 			})
