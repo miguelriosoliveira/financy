@@ -1,18 +1,30 @@
 const TOKEN_KEY = 'financy.token';
 const REFRESH_TOKEN_KEY = 'financy.refreshToken';
 
-export function setTokens(token: string, refreshToken: string) {
-	localStorage.setItem(TOKEN_KEY, token);
-	localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+function readFromStores(key: string) {
+	return localStorage.getItem(key) ?? sessionStorage.getItem(key);
+}
+
+export function setTokens(token: string, refreshToken: string, rememberMe: boolean) {
+	clearTokens();
+	const store = rememberMe ? localStorage : sessionStorage;
+	store.setItem(TOKEN_KEY, token);
+	store.setItem(REFRESH_TOKEN_KEY, refreshToken);
 }
 
 export function clearTokens() {
-	localStorage.removeItem(TOKEN_KEY);
-	localStorage.removeItem(REFRESH_TOKEN_KEY);
+	for (const store of [localStorage, sessionStorage]) {
+		store.removeItem(TOKEN_KEY);
+		store.removeItem(REFRESH_TOKEN_KEY);
+	}
 }
 
 export function getToken() {
-	return localStorage.getItem(TOKEN_KEY);
+	return readFromStores(TOKEN_KEY);
+}
+
+export function getRefreshToken() {
+	return readFromStores(REFRESH_TOKEN_KEY);
 }
 
 export function isAuthenticated() {

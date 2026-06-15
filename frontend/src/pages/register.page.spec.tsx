@@ -172,7 +172,7 @@ describe('RegisterPage', () => {
 	});
 
 	it('registers a new user, clears stored tokens, and redirects to login', async () => {
-		setTokens('stale-token', 'stale-refresh-token');
+		setTokens('stale-token', 'stale-refresh-token', true);
 
 		renderWithProviders(<RegisterPage />, {
 			mocks: [

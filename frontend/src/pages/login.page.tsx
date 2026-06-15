@@ -38,6 +38,7 @@ export function LoginPage() {
 	const [showPassword, setShowPassword] = useState(false);
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
+	const [rememberMe, setRememberMe] = useState(false);
 	const [errors, setErrors] = useState<Partial<Record<'email' | 'password', string>>>({});
 	const [login, { loading }] = useMutation<LoginMutationResult>(LOGIN);
 	const navigate = useNavigate();
@@ -62,7 +63,7 @@ export function LoginPage() {
 			.then(({ data }) => {
 				const loginResult = data?.login;
 				if (loginResult?.token && loginResult?.refreshToken) {
-					setTokens(loginResult.token, loginResult.refreshToken);
+					setTokens(loginResult.token, loginResult.refreshToken, rememberMe);
 				}
 				toast.success('Login realizado com sucesso');
 				navigate('/');
@@ -101,7 +102,11 @@ export function LoginPage() {
 
 			<div className="flex justify-between">
 				<Field orientation="horizontal" className="w-fit">
-					<Checkbox id="remember" />
+					<Checkbox
+						id="remember"
+						checked={rememberMe}
+						onCheckedChange={value => setRememberMe(value === true)}
+					/>
 					<FieldLabel htmlFor="remember">Lembrar-me</FieldLabel>
 				</Field>
 				<a href="/forgot-password" className="text-brand-base hover:underline">

@@ -26,6 +26,9 @@ vi.mock('react-toastify', () => ({
 	},
 }));
 
+const TOKEN_KEY = 'financy.token';
+const REFRESH_TOKEN_KEY = 'financy.refreshToken';
+
 const LOGIN = gql`
 	mutation Login($data: LoginInput!) {
 		login(data: $data) {
@@ -178,6 +181,43 @@ describe('LoginPage', () => {
 		expect(getToken()).toBe('access-token');
 		expect(mockNavigate).toHaveBeenCalledWith('/');
 		expect(mockToastError).not.toHaveBeenCalled();
+	});
+
+	it('stores tokens in sessionStorage when remember me is unchecked', async () => {
+		renderWithProviders(<LoginPage />, {
+			mocks: [createLoginSuccessMock()],
+		});
+
+		const user = await fillLoginForm(VALID_LOGIN);
+		await user.click(screen.getByRole('button', { name: 'Entrar' }));
+
+		await waitFor(() => {
+			expect(mockToastSuccess).toHaveBeenCalledWith('Login realizado com sucesso');
+		});
+
+		expect(sessionStorage.getItem(TOKEN_KEY)).toBe('access-token');
+		expect(sessionStorage.getItem(REFRESH_TOKEN_KEY)).toBe('refresh-token');
+		expect(localStorage.getItem(TOKEN_KEY)).toBeNull();
+		expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBeNull();
+	});
+
+	it('stores tokens in localStorage when remember me is checked', async () => {
+		renderWithProviders(<LoginPage />, {
+			mocks: [createLoginSuccessMock()],
+		});
+
+		const user = await fillLoginForm(VALID_LOGIN);
+		await user.click(screen.getByLabelText('Lembrar-me'));
+		await user.click(screen.getByRole('button', { name: 'Entrar' }));
+
+		await waitFor(() => {
+			expect(mockToastSuccess).toHaveBeenCalledWith('Login realizado com sucesso');
+		});
+
+		expect(localStorage.getItem(TOKEN_KEY)).toBe('access-token');
+		expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBe('refresh-token');
+		expect(sessionStorage.getItem(TOKEN_KEY)).toBeNull();
+		expect(sessionStorage.getItem(REFRESH_TOKEN_KEY)).toBeNull();
 	});
 
 	it('shows an error toast when login fails', async () => {

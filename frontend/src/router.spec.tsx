@@ -33,7 +33,7 @@ describe('AppRoutes', () => {
 	});
 
 	it('renders home for authenticated users', () => {
-		setTokens('access-token', 'refresh-token');
+		setTokens('access-token', 'refresh-token', true);
 
 		renderAt('/');
 
@@ -41,7 +41,7 @@ describe('AppRoutes', () => {
 	});
 
 	it('redirects authenticated users from unknown routes to home', () => {
-		setTokens('access-token', 'refresh-token');
+		setTokens('access-token', 'refresh-token', true);
 
 		renderAt('/unknown');
 
