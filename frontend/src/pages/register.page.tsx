@@ -15,8 +15,7 @@ import { FieldSeparator } from '../components/ui/field';
 const REGISTER = gql`
 	mutation Register($data: RegisterInput!) {
 		register(data: $data) {
-			token
-			refreshToken
+			success
 		}
 	}
 `;

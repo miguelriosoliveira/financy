@@ -35,9 +35,7 @@ input RegisterInput {
 }
 
 type RegisterOutput {
-  refreshToken: String!
-  token: String!
-  user: UserModel!
+  success: Boolean!
 }
 
 type UserModel {

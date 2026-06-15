@@ -25,8 +25,8 @@ export class AuthService {
 			throw new Error('User already registered');
 		}
 		const password = await this.hashService.hash(rawPassword);
-		const user = await this.userRepository.create({ name, email, password });
-		return this.generateTokens(user);
+		await this.userRepository.create({ name, email, password });
+		return { success: true };
 	}
 
 	async login({ email, password: rawPassword }: LoginInput): Promise<LoginOutput> {

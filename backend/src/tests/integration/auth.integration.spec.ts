@@ -5,13 +5,7 @@ import { setupTestApp, type TestApp } from '../helpers/test-app.ts';
 const REGISTER = /* GraphQL */ `
 	mutation Register($data: RegisterInput!) {
 		register(data: $data) {
-			token
-			refreshToken
-			user {
-				id
-				name
-				email
-			}
+			success
 		}
 	}
 `;
@@ -57,10 +51,7 @@ describe('Auth (integration)', () => {
 			expect(response.body.errors).toBeUndefined();
 
 			const { register } = response.body.data;
-			expect(register.token).toEqual(expect.any(String));
-			expect(register.refreshToken).toEqual(expect.any(String));
-			expect(register.user).toMatchObject({ name: data.name, email: data.email });
-			expect(register.user.id).toEqual(expect.any(String));
+			expect(register.success).toBe(true);
 
 			const stored = await ctx.dbClient.findByEmail(data.email);
 			expect(stored).not.toBeNull();

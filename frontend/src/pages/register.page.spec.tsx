@@ -29,8 +29,7 @@ vi.mock('react-toastify', () => ({
 const REGISTER = gql`
 	mutation Register($data: RegisterInput!) {
 		register(data: $data) {
-			token
-			refreshToken
+			success
 		}
 	}
 `;
@@ -56,8 +55,7 @@ function createRegisterSuccessMock(data = VALID_REGISTRATION): MockLink.MockedRe
 		result: {
 			data: {
 				register: {
-					token: 'access-token',
-					refreshToken: 'refresh-token',
+					success: true,
 				},
 			},
 		},

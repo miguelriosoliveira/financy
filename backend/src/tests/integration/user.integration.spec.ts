@@ -5,11 +5,7 @@ import { setupTestApp, type TestApp } from '../helpers/test-app.ts';
 const REGISTER = /* GraphQL */ `
 	mutation Register($data: RegisterInput!) {
 		register(data: $data) {
-			user {
-				id
-				name
-				email
-			}
+			success
 		}
 	}
 `;
@@ -45,7 +41,12 @@ describe('User (integration)', () => {
 		const registerResponse = await request(ctx.app)
 			.post('/graphql')
 			.send({ query: REGISTER, variables: { data } });
-		const userId = registerResponse.body.data.register.user.id;
+		expect(registerResponse.body.errors).toBeUndefined();
+		expect(registerResponse.body.data.register.success).toBe(true);
+
+		const stored = await ctx.dbClient.findByEmail(data.email);
+		expect(stored).not.toBeNull();
+		const userId = stored!.id;
 
 		const response = await request(ctx.app)
 			.post('/graphql')

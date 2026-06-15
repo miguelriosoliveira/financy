@@ -20,7 +20,7 @@ describe('AuthService', () => {
 	});
 
 	describe('register', () => {
-		it('should register a new user successfully and return tokens', async () => {
+		it('should register a new user successfully and return success', async () => {
 			// Arrange
 			const input = { name: 'Test User', email: 'test@example.com', password: 'password123' };
 			const hashedPassword = 'hashed-password';
@@ -47,12 +47,8 @@ describe('AuthService', () => {
 				email: input.email,
 				password: hashedPassword,
 			});
-			expect(mockJwtService.sign).toHaveBeenCalledTimes(2);
-			expect(result).toEqual({
-				token: 'mocked-jwt-token',
-				refreshToken: 'mocked-jwt-token',
-				user: createdUser,
-			});
+			expect(mockJwtService.sign).not.toHaveBeenCalled();
+			expect(result).toEqual({ success: true });
 		});
 
 		it('should throw an error if the user already exists', async () => {
