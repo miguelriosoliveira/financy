@@ -1,5 +1,5 @@
-import type { RegisterInput } from '../dtos/input/auth.input.ts';
-import type { RegisterOutput } from '../dtos/output/auth.output.ts';
+import type { LoginInput, RegisterInput } from '../dtos/input/auth.input.ts';
+import type { LoginOutput, RegisterOutput } from '../dtos/output/auth.output.ts';
 import type { UserModel } from '../models/user.model.ts';
 import type { UserRepository } from '../repositories/user.repository.ts';
 import type { HashService } from './hash.service.ts';
@@ -26,6 +26,18 @@ export class AuthService {
 		}
 		const password = await this.hashService.hash(rawPassword);
 		const user = await this.userRepository.create({ name, email, password });
+		return this.generateTokens(user);
+	}
+
+	async login({ email, password: rawPassword }: LoginInput): Promise<LoginOutput> {
+		const user = await this.userRepository.findByEmail(email);
+		if (!user) {
+			throw new Error('Invalid credentials');
+		}
+		const isPasswordValid = await this.hashService.compare(rawPassword, user.password);
+		if (!isPasswordValid) {
+			throw new Error('Invalid credentials');
+		}
 		return this.generateTokens(user);
 	}
 }

@@ -72,4 +72,65 @@ describe('AuthService', () => {
 			expect(mockUserRepository.create).not.toHaveBeenCalled();
 		});
 	});
+
+	describe('login', () => {
+		it('should log in successfully and return tokens', async () => {
+			// Arrange
+			const input = { email: 'test@example.com', password: 'password123' };
+			const user = {
+				id: 'uuid-1234',
+				name: 'Test User',
+				email: input.email,
+				password: 'hashed-password',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			};
+			mockUserRepository.findByEmail.mockResolvedValueOnce(user);
+			mockHashService.compare.mockResolvedValueOnce(true);
+
+			// Act
+			const result = await authService.login(input);
+
+			// Assert
+			expect(mockUserRepository.findByEmail).toHaveBeenCalledWith(input.email);
+			expect(mockHashService.compare).toHaveBeenCalledWith(input.password, user.password);
+			expect(mockJwtService.sign).toHaveBeenCalledTimes(2);
+			expect(result).toEqual({
+				token: 'mocked-jwt-token',
+				refreshToken: 'mocked-jwt-token',
+				user,
+			});
+		});
+
+		it('should throw an error if the user is not found', async () => {
+			// Arrange
+			const input = { email: 'missing@example.com', password: 'password123' };
+			mockUserRepository.findByEmail.mockResolvedValueOnce(null);
+
+			// Act & Assert
+			await expect(authService.login(input)).rejects.toThrow('Invalid credentials');
+			expect(mockHashService.compare).not.toHaveBeenCalled();
+			expect(mockJwtService.sign).not.toHaveBeenCalled();
+		});
+
+		it('should throw an error if the password is invalid', async () => {
+			// Arrange
+			const input = { email: 'test@example.com', password: 'wrong-password' };
+			const user = {
+				id: 'uuid-1234',
+				name: 'Test User',
+				email: input.email,
+				password: 'hashed-password',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			};
+			mockUserRepository.findByEmail.mockResolvedValueOnce(user);
+			mockHashService.compare.mockResolvedValueOnce(false);
+
+			// Act & Assert
+			await expect(authService.login(input)).rejects.toThrow('Invalid credentials');
+			expect(mockHashService.compare).toHaveBeenCalledWith(input.password, user.password);
+			expect(mockJwtService.sign).not.toHaveBeenCalled();
+		});
+	});
 });
