@@ -8,9 +8,9 @@ import { toast } from 'react-toastify';
 import z from 'zod';
 import { Form } from '@/components/form';
 import { FormField } from '@/components/form-field';
+import { Button } from '@/components/ui/button';
+import { FieldSeparator } from '@/components/ui/field';
 import { clearTokens } from '@/lib/auth';
-import { Button } from '../components/ui/button';
-import { FieldSeparator } from '../components/ui/field';
 
 const REGISTER = gql`
 	mutation Register($data: RegisterInput!) {

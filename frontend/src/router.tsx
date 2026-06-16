@@ -1,9 +1,9 @@
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router';
 import { isAuthenticated } from './lib/auth';
-import { AuthLayout } from './pages/auth.layout';
+import { AuthLayout } from './pages/auth/auth.layout';
+import { LoginPage } from './pages/auth/login.page';
+import { RegisterPage } from './pages/auth/register.page';
 import { HomePage } from './pages/home.page';
-import { LoginPage } from './pages/login.page';
-import { RegisterPage } from './pages/register.page';
 
 function ProtectedRoute() {
 	return isAuthenticated() ? <Outlet /> : <Navigate to="/login" replace />;

@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router';
+import Logo from '@/assets/logo.svg';
 import { Card, CardContent } from '@/components/ui/card';
-import Logo from '../assets/logo.svg';
 
 export function AuthLayout() {
 	return (

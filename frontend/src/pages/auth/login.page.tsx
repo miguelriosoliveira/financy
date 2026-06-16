@@ -8,10 +8,10 @@ import { toast } from 'react-toastify';
 import z from 'zod';
 import { Form } from '@/components/form';
 import { FormField } from '@/components/form-field';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Field, FieldLabel, FieldSeparator } from '@/components/ui/field';
 import { setTokens } from '@/lib/auth';
-import { Button } from '../components/ui/button';
-import { Checkbox } from '../components/ui/checkbox';
-import { Field, FieldLabel, FieldSeparator } from '../components/ui/field';
 
 const LOGIN = gql`
 	mutation Login($data: LoginInput!) {
