@@ -1,7 +1,9 @@
+import { Navigate, Outlet } from 'react-router';
 import Logo from '@/assets/logo.svg';
+import { isAuthenticated } from '@/lib/auth';
 
-export function HomePage() {
-	return (
+export function AuthenticatedLayout() {
+	return isAuthenticated() ? (
 		<main className="min-h-screen bg-gray-100">
 			<header className="flex justify-between bg-white border-b border-gray-200">
 				<img src={Logo} alt="Financy logo" />
@@ -14,6 +16,10 @@ export function HomePage() {
 
 				<div>Perfil</div>
 			</header>
+
+			<Outlet />
 		</main>
+	) : (
+		<Navigate to="/login" replace />
 	);
 }
