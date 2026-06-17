@@ -4,13 +4,13 @@ import { CategoriesPage } from './pages/authenticated/categories.page';
 import { HomePage } from './pages/authenticated/home.page';
 import { TransactionsPage } from './pages/authenticated/transactions.page';
 import { LoginPage } from './pages/non-authenticated/login.page';
-import { AuthLayout } from './pages/non-authenticated/non-authenticated.layout';
+import { NonAuthenticatedLayout } from './pages/non-authenticated/non-authenticated.layout';
 import { RegisterPage } from './pages/non-authenticated/register.page';
 
 export function AppRoutes() {
 	return (
 		<Routes>
-			<Route element={<AuthLayout />}>
+			<Route element={<NonAuthenticatedLayout />}>
 				<Route path="login" element={<LoginPage />} />
 				<Route path="register" element={<RegisterPage />} />
 			</Route>

@@ -14,7 +14,13 @@ export default defineConfig({
 			provider: 'v8',
 			reporter: ['text', 'json', 'html'],
 			include: ['src/**/*.ts'],
-			exclude: ['src/tests/**', 'src/prisma/generated/**', 'src/env.ts', 'src/server.ts', 'src/**/*.interface.ts'],
+			exclude: [
+				'src/tests/**',
+				'src/prisma/generated/**',
+				'src/env.ts',
+				'src/server.ts',
+				'src/**/*.interface.ts',
+			],
 		},
 		projects: [
 			{

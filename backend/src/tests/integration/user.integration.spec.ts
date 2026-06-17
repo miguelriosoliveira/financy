@@ -46,6 +46,7 @@ describe('User (integration)', () => {
 
 		const stored = await ctx.dbClient.findByEmail(data.email);
 		expect(stored).not.toBeNull();
+		// biome-ignore lint/style/noNonNullAssertion: id is guaranteed to be defined here
 		const userId = stored!.id;
 
 		const response = await request(ctx.app)

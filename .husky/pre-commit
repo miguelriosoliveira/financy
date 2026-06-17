@@ -1,5 +1,3 @@
-pnpm --filter @financy/frontend --filter @financy/backend run build
-pnpm --filter @financy/frontend --filter @financy/backend run test
-
-pnpm --filter @financy/frontend --filter @financy/frontend run build
-pnpm --filter @financy/frontend --filter @financy/frontend run test
+pnpm --filter @financy/frontend --filter @financy/backend build
+pnpm --filter @financy/frontend --filter @financy/backend test
+pnpm lint

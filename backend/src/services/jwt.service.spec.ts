@@ -19,7 +19,7 @@ describe('JwtService', () => {
 	it('encodes the requested lifetime into the token expiry', () => {
 		const token = jwtService.sign({ id: 'uuid-2', email: 'exp@example.com' }, 60);
 		const decoded = jwt.verify(token, env.JWT_SECRET) as jwt.JwtPayload;
-		// biome-ignore lint/style/noNonNullAssertion: exp and iat are supposed to be defined here
+		// biome-ignore lint/style/noNonNullAssertion: exp and iat are guaranteed to be defined here
 		expect(decoded.exp! - decoded.iat!).toBe(60);
 	});
 

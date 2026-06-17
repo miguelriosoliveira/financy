@@ -26,7 +26,7 @@ export function Form({
 			<FieldGroup>
 				<FieldSet>
 					<FieldLegend className="text-center">
-						<span className="text-xl font-bold text-gray-800">{title}</span>
+						<span className="font-bold text-gray-800 text-xl">{title}</span>
 					</FieldLegend>
 					<FieldDescription className="text-center text-base text-gray-600">
 						{description}
