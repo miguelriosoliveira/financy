@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import { AuthenticatedLayout } from './pages/authenticated/authenticated.layout';
-import { CategoriesPage } from './pages/authenticated/categories.page';
+import { CategoriesPage } from './pages/authenticated/categories/categories.page';
 import { HomePage } from './pages/authenticated/home.page';
 import { TransactionsPage } from './pages/authenticated/transactions.page';
 import { LoginPage } from './pages/non-authenticated/login.page';
