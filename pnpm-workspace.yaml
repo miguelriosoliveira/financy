@@ -1,11 +1,11 @@
-minimumReleaseAgeStrict: true
-packages:
-  - 'backend'
-  - 'frontend'
-  - 'shared'
 allowBuilds:
   '@apollo/protobufjs': true
   '@prisma/engines': true
   better-sqlite3: true
   esbuild: true
   prisma: true
+minimumReleaseAgeStrict: true
+packages:
+  - 'backend'
+  - 'frontend'
+  - 'shared'
