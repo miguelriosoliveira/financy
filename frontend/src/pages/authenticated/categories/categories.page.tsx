@@ -1,8 +1,18 @@
 import { ArrowUpDownIcon, PlusIcon, TagIcon, UtensilsIcon } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Button } from '@/components/button';
+import { FormField } from '@/components/form-field';
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from '@/components/ui/dialog';
 import { CategoryCard } from './components/category-card';
 import { HeaderCard } from './components/header-card';
+import { IconSelector } from './components/icon-selector';
 
 export function CategoriesPage() {
 	function handleCreateCategory() {
@@ -24,10 +34,27 @@ export function CategoriesPage() {
 					<h1 className="font-bold text-2xl">Categorias</h1>
 					<h2 className="font-light text-gray-600">Organize suas transações por categorias</h2>
 				</div>
-				<Button className="px-4 py-4.5 font-light" size="sm" onClick={handleCreateCategory}>
-					<PlusIcon className="size-4" />
-					Nova categoria
-				</Button>
+				<Dialog>
+					<DialogTrigger asChild>
+						<Button className="px-4 py-4.5 font-light" size="sm">
+							<PlusIcon className="size-4" />
+							Nova categoria
+						</Button>
+					</DialogTrigger>
+
+					<DialogContent>
+						<DialogHeader>
+							<DialogTitle>Nova categoria</DialogTitle>
+							<DialogDescription>Organize suas transações com categorias</DialogDescription>
+						</DialogHeader>
+						<form noValidate onSubmit={handleCreateCategory}>
+							<FormField label="Título" id="title" placeholder="Ex. Alimentação" />
+							<FormField label="Descrição" id="description" placeholder="Descrição da categoria" />
+							<IconSelector />
+							{/* <ColorSelector /> */}
+						</form>
+					</DialogContent>
+				</Dialog>
 			</div>
 
 			<div className="grid grid-cols-3 gap-6">
