@@ -5,10 +5,10 @@ import { Button } from './ui/button';
 type Props = {
 	children: ReactNode;
 	to: string;
-	isActive: boolean;
+	isActive?: boolean;
 };
 
-export function Link({ children, to, isActive }: Props) {
+export function Link({ children, to, isActive = false }: Props) {
 	return (
 		<Button
 			variant="link"

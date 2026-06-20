@@ -14,7 +14,7 @@ export function HeaderCard({ icon, title, value }: Props) {
 				{icon}
 				<div className="flex flex-col gap-2">
 					<span className="font-bold text-3xl">{value}</span>
-					<span className="font-light text-gray-500 text-xs uppercase">{title}</span>
+					<span className="font-normal text-gray-500 text-xs uppercase">{title}</span>
 				</div>
 			</CardContent>
 		</Card>

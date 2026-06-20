@@ -10,7 +10,9 @@ export function AuthenticatedLayout() {
 	return isAuthenticated() ? (
 		<main className="min-h-screen bg-gray-100">
 			<header className="flex items-center justify-between border-gray-200 border-b bg-white px-12 py-4">
-				<img src={Logo} alt="Financy logo" className="h-6" />
+				<Link to="/">
+					<img src={Logo} alt="Financy logo" className="h-6" />
+				</Link>
 
 				<div className="flex h-9 items-center gap-5 text-gray-600 text-sm">
 					<Link to="/" isActive={location.pathname === '/'}>
