@@ -1,8 +1,16 @@
 import {
+	BaggageClaimIcon,
+	BookOpenIcon,
 	BriefcaseBusinessIcon,
 	CarFrontIcon,
+	DumbbellIcon,
+	GiftIcon,
 	HeartPulseIcon,
+	HouseIcon,
+	MailboxIcon,
+	PawPrintIcon,
 	PiggyBankIcon,
+	ReceiptTextIcon,
 	ShoppingCartIcon,
 	TicketIcon,
 	ToolCaseIcon,
@@ -18,14 +26,22 @@ const iconTag = tv({
 	},
 	variants: {
 		category: {
-			food: { wrapper: 'bg-blue-light', icon: 'text-blue-base' },
-			entertainment: { wrapper: 'bg-pink-light', icon: 'text-pink-base' },
+			salary: { wrapper: 'bg-green-light', icon: 'text-green-base' },
+			transport: { wrapper: 'bg-purple-light', icon: 'text-purple-base' },
+			health: { wrapper: 'bg-red-light', icon: 'text-red-base' },
 			investment: { wrapper: 'bg-green-light', icon: 'text-green-base' },
 			groceries: { wrapper: 'bg-orange-light', icon: 'text-orange-base' },
-			salary: { wrapper: 'bg-green-light', icon: 'text-green-base' },
-			health: { wrapper: 'bg-red-light', icon: 'text-red-base' },
-			transport: { wrapper: 'bg-purple-light', icon: 'text-purple-base' },
+			entertainment: { wrapper: 'bg-pink-light', icon: 'text-pink-base' },
 			utilities: { wrapper: 'bg-yellow-light', icon: 'text-yellow-base' },
+			food: { wrapper: 'bg-blue-light', icon: 'text-blue-base' },
+			pets: { wrapper: 'bg-orange-light', icon: 'text-orange-base' },
+			home: { wrapper: 'bg-blue-light', icon: 'text-blue-base' },
+			gifts: { wrapper: 'bg-pink-light', icon: 'text-pink-base' },
+			fitness: { wrapper: 'bg-red-light', icon: 'text-red-base' },
+			education: { wrapper: 'bg-purple-light', icon: 'text-purple-base' },
+			travel: { wrapper: 'bg-blue-light', icon: 'text-blue-base' },
+			mail: { wrapper: 'bg-yellow-light', icon: 'text-yellow-base' },
+			bills: { wrapper: 'bg-yellow-light', icon: 'text-yellow-base' },
 		},
 	},
 	defaultVariants: {
@@ -35,15 +51,42 @@ const iconTag = tv({
 
 export type CategoryType = keyof typeof iconTag.variants.category;
 
-const CATEGORY_ICONS: Record<CategoryType, ElementType> = {
-	food: UtensilsIcon,
-	entertainment: TicketIcon,
+export const CATEGORY_ICONS: Record<CategoryType, ElementType> = {
+	salary: BriefcaseBusinessIcon,
+	transport: CarFrontIcon,
+	health: HeartPulseIcon,
 	investment: PiggyBankIcon,
 	groceries: ShoppingCartIcon,
-	salary: BriefcaseBusinessIcon,
-	health: HeartPulseIcon,
-	transport: CarFrontIcon,
+	entertainment: TicketIcon,
 	utilities: ToolCaseIcon,
+	food: UtensilsIcon,
+	pets: PawPrintIcon,
+	home: HouseIcon,
+	gifts: GiftIcon,
+	fitness: DumbbellIcon,
+	education: BookOpenIcon,
+	travel: BaggageClaimIcon,
+	mail: MailboxIcon,
+	bills: ReceiptTextIcon,
+};
+
+export const CATEGORY_LABELS: Record<CategoryType, string> = {
+	salary: 'Salário',
+	transport: 'Transporte',
+	health: 'Saúde',
+	investment: 'Investimento',
+	groceries: 'Mercado',
+	entertainment: 'Entretimento',
+	utilities: 'Utilidades',
+	food: 'Alimentação',
+	pets: 'Pets',
+	home: 'Casa',
+	gifts: 'Presentes',
+	fitness: 'Fitness',
+	education: 'Educação',
+	travel: 'Viagem',
+	mail: 'Correio',
+	bills: 'Contas',
 };
 
 export function CategoryIcon({ category }: VariantProps<typeof iconTag>) {

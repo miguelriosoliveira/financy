@@ -1,7 +1,10 @@
 import { ArrowUpDownIcon, PlusIcon, TagIcon, UtensilsIcon } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { Button } from '@/components/button';
 import { FormField } from '@/components/form-field';
+import { SubmitButton } from '@/components/submit-button';
+import type { TagColor } from '@/components/tag';
 import {
 	Dialog,
 	DialogContent,
@@ -11,10 +14,14 @@ import {
 	DialogTrigger,
 } from '@/components/ui/dialog';
 import { CategoryCard } from './components/category-card';
+import type { CategoryType } from './components/category-icon';
+import { ColorSelector } from './components/color-selector';
 import { HeaderCard } from './components/header-card';
 import { IconSelector } from './components/icon-selector';
 
 export function CategoriesPage() {
+	const [icon, setIcon] = useState<CategoryType>('salary');
+	const [color, setColor] = useState<TagColor>('green');
 	function handleCreateCategory() {
 		toast.error('Create: Ainda não implementado');
 	}
@@ -44,14 +51,17 @@ export function CategoriesPage() {
 
 					<DialogContent>
 						<DialogHeader>
-							<DialogTitle>Nova categoria</DialogTitle>
-							<DialogDescription>Organize suas transações com categorias</DialogDescription>
+							<DialogTitle className="text-base">Nova categoria</DialogTitle>
+							<DialogDescription className="font-light text-gray-600">
+								Organize suas transações com categorias
+							</DialogDescription>
 						</DialogHeader>
 						<form noValidate onSubmit={handleCreateCategory} className="flex flex-col gap-4">
 							<FormField label="Título" id="title" placeholder="Ex. Alimentação" />
 							<FormField label="Descrição" id="description" placeholder="Descrição da categoria" />
-							<IconSelector />
-							{/* <ColorSelector /> */}
+							<IconSelector value={icon} onChange={setIcon} />
+							<ColorSelector value={color} onChange={setColor} />
+							<SubmitButton text="Salvar" loading={false} />
 						</form>
 					</DialogContent>
 				</Dialog>

@@ -1,78 +1,32 @@
+import { OptionSelector } from '@/components/option-selector';
 import {
-	BaggageClaimIcon,
-	BookOpenIcon,
-	BriefcaseBusinessIcon,
-	CarFrontIcon,
-	DumbbellIcon,
-	GiftIcon,
-	HeartPulseIcon,
-	HouseIcon,
-	MailboxIcon,
-	PawPrintIcon,
-	PiggyBankIcon,
-	ReceiptTextIcon,
-	ShoppingCartIcon,
-	TicketIcon,
-	ToolCaseIcon,
-	UtensilsIcon,
-} from 'lucide-react';
-import { Button } from '@/components/button';
-import { Field, FieldLabel } from '@/components/ui/field';
+	CATEGORY_ICONS,
+	CATEGORY_LABELS,
+	type CategoryType,
+} from './category-icon';
 
-export function IconSelector() {
+type Props = {
+	value: CategoryType;
+	onChange: (value: CategoryType) => void;
+};
+
+const ICON_OPTIONS = (Object.keys(CATEGORY_ICONS) as CategoryType[]).map(category => {
+	const Icon = CATEGORY_ICONS[category];
+
+	return {
+		value: category,
+		label: CATEGORY_LABELS[category],
+		render: <Icon className="size-[18px]" />,
+	};
+});
+
+export function IconSelector({ value, onChange }: Props) {
 	return (
-		<Field>
-			<FieldLabel>Ícone</FieldLabel>
-			<div className="grid grid-cols-8 gap-2">
-				<Button type="button" variant="outline" size="icon">
-					<BriefcaseBusinessIcon />
-				</Button>
-				<Button type="button" variant="outline" size="icon">
-					<CarFrontIcon />
-				</Button>
-				<Button type="button" variant="outline" size="icon">
-					<HeartPulseIcon />
-				</Button>
-				<Button type="button" variant="outline" size="icon">
-					<PiggyBankIcon />
-				</Button>
-				<Button type="button" variant="outline" size="icon">
-					<ShoppingCartIcon />
-				</Button>
-				<Button type="button" variant="outline" size="icon">
-					<TicketIcon />
-				</Button>
-				<Button type="button" variant="outline" size="icon">
-					<ToolCaseIcon />
-				</Button>
-				<Button type="button" variant="outline" size="icon">
-					<UtensilsIcon />
-				</Button>
-				<Button type="button" variant="outline" size="icon">
-					<PawPrintIcon />
-				</Button>
-				<Button type="button" variant="outline" size="icon">
-					<HouseIcon />
-				</Button>
-				<Button type="button" variant="outline" size="icon">
-					<GiftIcon />
-				</Button>
-				<Button type="button" variant="outline" size="icon">
-					<DumbbellIcon />
-				</Button>
-				<Button type="button" variant="outline" size="icon">
-					<BookOpenIcon />
-				</Button>
-				<Button type="button" variant="outline" size="icon">
-					<BaggageClaimIcon />
-				</Button>
-				<Button type="button" variant="outline" size="icon">
-					<MailboxIcon />
-				</Button>
-				<Button type="button" variant="outline" size="icon">
-					<ReceiptTextIcon />
-				</Button>
-			</div>
-		</Field>
+		<OptionSelector
+			label="Ícone"
+			value={value}
+			onChange={onChange}
+			options={ICON_OPTIONS}
+		/>
 	);
 }
