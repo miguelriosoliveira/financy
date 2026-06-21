@@ -23,22 +23,19 @@ export function Form({
 }: Props) {
 	return (
 		<form noValidate onSubmit={handleSubmit}>
-			<FieldGroup>
-				<FieldSet>
-					<FieldLegend className="text-center">
-						<span className="font-bold text-gray-800 text-xl">{title}</span>
-					</FieldLegend>
-					<FieldDescription className="text-center text-base text-gray-600">
-						{description}
-					</FieldDescription>
+			<FieldSet>
+				<FieldLegend className="text-center">
+					<span className="font-bold text-xl">{title}</span>
+				</FieldLegend>
 
-					{fieldset}
+				<FieldDescription className="text-center text-base">{description}</FieldDescription>
 
-					<SubmitButton text={submitButtonText} loading={loading} />
+				{fieldset}
 
-					{afterSubmitButton}
-				</FieldSet>
-			</FieldGroup>
+				<SubmitButton text={submitButtonText} loading={loading} />
+
+				{afterSubmitButton}
+			</FieldSet>
 		</form>
 	);
 }

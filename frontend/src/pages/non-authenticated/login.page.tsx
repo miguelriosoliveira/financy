@@ -6,9 +6,9 @@ import { type SubmitEvent, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'react-toastify';
 import z from 'zod';
+import { Button } from '@/components/button';
 import { Form } from '@/components/form';
 import { FormField } from '@/components/form-field';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Field, FieldLabel, FieldSeparator } from '@/components/ui/field';
 import { setTokens } from '@/lib/auth';
@@ -107,9 +107,11 @@ export function LoginPage() {
 						checked={rememberMe}
 						onCheckedChange={value => setRememberMe(value === true)}
 					/>
-					<FieldLabel htmlFor="remember">Lembrar-me</FieldLabel>
+					<FieldLabel htmlFor="remember" className="font-light">
+						Lembrar-me
+					</FieldLabel>
 				</Field>
-				<a href="/forgot-password" className="text-brand-base hover:underline">
+				<a href="/forgot-password" className="font-normal text-brand-base hover:underline">
 					Recuperar senha
 				</a>
 			</div>
@@ -120,9 +122,9 @@ export function LoginPage() {
 		<>
 			<FieldSeparator>ou</FieldSeparator>
 
-			<div className="text-center text-gray-600">Ainda não tem uma conta?</div>
+			<div className="text-center font-light text-gray-600">Ainda não tem uma conta?</div>
 
-			<Button type="button" variant="outline" className="hover:bg-gray-200" asChild>
+			<Button color="secondary" asChild>
 				<a href="/register">
 					<UserRoundPlusIcon /> Criar conta
 				</a>

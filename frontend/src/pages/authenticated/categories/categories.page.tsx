@@ -34,7 +34,7 @@ export function CategoriesPage() {
 					<h1 className="font-bold text-2xl">Categorias</h1>
 					<h2 className="font-light text-gray-600">Organize suas transações por categorias</h2>
 				</div>
-				<Dialog>
+				<Dialog open>
 					<DialogTrigger asChild>
 						<Button className="px-4 py-4.5 font-light" size="sm">
 							<PlusIcon className="size-4" />
@@ -47,7 +47,7 @@ export function CategoriesPage() {
 							<DialogTitle>Nova categoria</DialogTitle>
 							<DialogDescription>Organize suas transações com categorias</DialogDescription>
 						</DialogHeader>
-						<form noValidate onSubmit={handleCreateCategory}>
+						<form noValidate onSubmit={handleCreateCategory} className="flex flex-col gap-4">
 							<FormField label="Título" id="title" placeholder="Ex. Alimentação" />
 							<FormField label="Descrição" id="description" placeholder="Descrição da categoria" />
 							<IconSelector />
