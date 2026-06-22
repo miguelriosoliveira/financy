@@ -1,6 +1,6 @@
 import type { ReactNode, SubmitEventHandler } from 'react';
 import { SubmitButton } from './submit-button';
-import { FieldDescription, FieldGroup, FieldLegend, FieldSet } from './ui/field';
+import { FieldDescription, FieldLegend, FieldSet } from './ui/field';
 
 type Props = {
 	title: string;

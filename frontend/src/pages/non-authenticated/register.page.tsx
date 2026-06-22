@@ -58,10 +58,7 @@ export function RegisterPage() {
 				toast.success('Usuário cadastrado com sucesso');
 				navigate('/login');
 			})
-			.catch(error => {
-				console.error(error);
-				toast.error('Erro ao cadastrar usuário');
-			});
+			.catch(() => toast.error('Erro ao cadastrar usuário'));
 	}
 
 	const fieldset = (

@@ -22,6 +22,12 @@
 		"enabled": true,
 		"rules": {
 			"preset": "recommended",
+			"correctness": {
+				"noUnusedImports": {
+					"level": "warn",
+					"fix": "safe"
+				}
+			},
 			"nursery": {
 				"useSortedClasses": {
 					"level": "warn",

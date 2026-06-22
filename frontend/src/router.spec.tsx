@@ -22,29 +22,23 @@ describe('AppRoutes', () => {
 
 	it('redirects unauthenticated users from home to login', () => {
 		renderAt('/');
-
 		expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument();
 	});
 
 	it('redirects unauthenticated users from unknown routes to login', () => {
 		renderAt('/unknown');
-
 		expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument();
 	});
 
 	it('renders home for authenticated users', () => {
 		setTokens('access-token', 'refresh-token', true);
-
 		renderAt('/');
-
-		expect(screen.getByRole('heading', { name: 'Financy' })).toBeInTheDocument();
+		expect(screen.getByText('HomePage')).toBeInTheDocument();
 	});
 
 	it('redirects authenticated users from unknown routes to home', () => {
 		setTokens('access-token', 'refresh-token', true);
-
 		renderAt('/unknown');
-
-		expect(screen.getByRole('heading', { name: 'Financy' })).toBeInTheDocument();
+		expect(screen.getByText('HomePage')).toBeInTheDocument();
 	});
 });

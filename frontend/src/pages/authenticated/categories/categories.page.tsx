@@ -41,7 +41,7 @@ export function CategoriesPage() {
 					<h1 className="font-bold text-2xl">Categorias</h1>
 					<h2 className="font-light text-gray-600">Organize suas transações por categorias</h2>
 				</div>
-				<Dialog open>
+				<Dialog>
 					<DialogTrigger asChild>
 						<Button className="px-4 py-4.5 font-light" size="sm">
 							<PlusIcon className="size-4" />

@@ -68,10 +68,7 @@ export function LoginPage() {
 				toast.success('Login realizado com sucesso');
 				navigate('/');
 			})
-			.catch(error => {
-				console.error(error);
-				toast.error('Erro ao fazer login');
-			});
+			.catch(() => toast.error('Erro ao fazer login'));
 	}
 
 	const fieldset = (
