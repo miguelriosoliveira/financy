@@ -28,7 +28,7 @@ export function OptionSelector<T extends string>({
 }: Props<T>) {
 	return (
 		<Field>
-			<FieldLabel>{label}</FieldLabel>
+			<FieldLabel className="font-normal">{label}</FieldLabel>
 			<RadioGroupRadix.Root
 				value={value}
 				onValueChange={nextValue => onChange(nextValue as T)}
