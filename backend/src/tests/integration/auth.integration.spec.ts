@@ -53,7 +53,7 @@ describe('Auth (integration)', () => {
 			const { register } = response.body.data;
 			expect(register.success).toBe(true);
 
-			const stored = await ctx.dbClient.findByEmail(data.email);
+			const stored = await ctx.dbClient.user.findByEmail(data.email);
 			expect(stored).not.toBeNull();
 			expect(stored?.name).toBe(data.name);
 			expect(stored?.password).not.toBe(data.password);
@@ -106,7 +106,7 @@ describe('Auth (integration)', () => {
 			expect(response.body.errors[0].extensions?.issues?.[field]).toBeDefined();
 			expect(response.body.data).toBeNull();
 
-			const stored = await ctx.dbClient.findByEmail(data.email);
+			const stored = await ctx.dbClient.user.findByEmail(data.email);
 			expect(stored).toBeNull();
 		});
 	});

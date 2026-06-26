@@ -1,15 +1,12 @@
-import { Field, ID, ObjectType } from 'type-graphql';
+import { Field, InputType } from 'type-graphql';
 
-@ObjectType()
-export class CategoryModel {
-	@Field(() => ID)
-	id!: string;
-
+@InputType()
+export class CreateCategoryInput {
 	@Field(() => String)
 	name!: string;
 
 	@Field(() => String, { nullable: true })
-	description?: string | null;
+	description?: string;
 
 	@Field(() => String)
 	icon!: string;

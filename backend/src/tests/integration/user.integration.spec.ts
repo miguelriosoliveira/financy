@@ -44,7 +44,7 @@ describe('User (integration)', () => {
 		expect(registerResponse.body.errors).toBeUndefined();
 		expect(registerResponse.body.data.register.success).toBe(true);
 
-		const stored = await ctx.dbClient.findByEmail(data.email);
+		const stored = await ctx.dbClient.user.findByEmail(data.email);
 		expect(stored).not.toBeNull();
 		// biome-ignore lint/style/noNonNullAssertion: id is guaranteed to be defined here
 		const userId = stored!.id;

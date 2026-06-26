@@ -11,7 +11,7 @@ export class DbUserRepository implements UserRepository {
 	constructor(private readonly dbUserClient: DbUserClient) {}
 
 	async findById(id: string): Promise<UserModel> {
-		const user = await this.dbUserClient.findById(id);
+		const user = await this.dbUserClient.user.findById(id);
 		if (!user) {
 			throw new Error('User not found');
 		}
@@ -19,10 +19,10 @@ export class DbUserRepository implements UserRepository {
 	}
 
 	async findByEmail(email: string): Promise<UserModel | null> {
-		return this.dbUserClient.findByEmail(email);
+		return this.dbUserClient.user.findByEmail(email);
 	}
 
 	async create({ name, email, password }: UserCreateProps): Promise<UserModel> {
-		return this.dbUserClient.create({ name, email, password });
+		return this.dbUserClient.user.create({ name, email, password });
 	}
 }
