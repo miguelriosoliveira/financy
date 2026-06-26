@@ -1,3 +1,5 @@
+import { ERROR_CODES } from '@financy/shared';
+import { GraphQLError } from 'graphql';
 import { beforeEach, describe, expect, it, type Mocked } from 'vitest';
 import type { CategoryModel } from '../models/category.model.ts';
 import type { CategoryRepository } from '../repositories/category.repository.ts';
@@ -48,7 +50,10 @@ describe('CategoryService', () => {
 			} satisfies CategoryModel;
 			mockCategoryRepository.findByName.mockResolvedValueOnce(existing);
 
-			await expect(categoryService.create(input)).rejects.toThrow('Category already exists');
+			const error = await categoryService.create(input).catch(error => error);
+			expect(error).toBeInstanceOf(GraphQLError);
+			expect((error as GraphQLError).message).toBe('Category already exists');
+			expect((error as GraphQLError).extensions?.code).toBe(ERROR_CODES.CATEGORY_ALREADY_EXISTS);
 			expect(mockCategoryRepository.create).not.toHaveBeenCalled();
 		});
 	});

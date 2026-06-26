@@ -91,6 +91,7 @@ describe('Category (integration)', () => {
 
 		expect(second.body.errors).toBeDefined();
 		expect(second.body.errors[0].message).toBe('Category already exists');
+		expect(second.body.errors[0].extensions?.code).toBe('CATEGORY_ALREADY_EXISTS');
 
 		const all = await ctx.dbClient.client.category.findMany({ where: { name: data.name } });
 		expect(all).toHaveLength(1);
