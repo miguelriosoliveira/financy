@@ -12,8 +12,16 @@ function extractBearerToken(authorization: string | undefined): string | null {
 	return token.length > 0 ? token : null;
 }
 
+type ContextRequest = {
+	req: {
+		headers: {
+			authorization?: string;
+		};
+	};
+};
+
 export function buildContext(jwtService: JwtService) {
-	return async ({ req }: { req: { headers: { authorization?: string } } }): Promise<GraphQLContext> => {
+	return async ({ req }: ContextRequest): Promise<GraphQLContext> => {
 		const token = extractBearerToken(req.headers.authorization);
 		const user = token ? jwtService.verify(token) : null;
 		return { user };
