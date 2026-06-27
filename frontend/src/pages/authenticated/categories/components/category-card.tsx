@@ -27,7 +27,7 @@ export function CategoryCard({
 		<Card className="min-h-56">
 			<CardHeader>
 				<div className="flex justify-between">
-					<CategoryIcon category={category} />
+					<CategoryIcon category={category} color={color} />
 
 					<div className="flex gap-2">
 						<Button

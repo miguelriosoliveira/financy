@@ -1,4 +1,6 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
+import { useEffect } from 'react';
+import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router';
+import { setNavigate } from './lib/navigation.ts';
 import { AuthenticatedLayout } from './pages/authenticated/authenticated.layout';
 import { CategoriesPage } from './pages/authenticated/categories/categories.page';
 import { HomePage } from './pages/authenticated/home.page';
@@ -24,9 +26,20 @@ export function AppRoutes() {
 	);
 }
 
+function NavigationBridge() {
+	const navigate = useNavigate();
+
+	useEffect(() => {
+		setNavigate(navigate);
+	}, [navigate]);
+
+	return null;
+}
+
 export function Router() {
 	return (
 		<BrowserRouter>
+			<NavigationBridge />
 			<AppRoutes />
 		</BrowserRouter>
 	);

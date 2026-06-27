@@ -1,13 +1,26 @@
+import { useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router';
 import Logo from '@/assets/logo.svg';
 import { Link } from '@/components/link';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { notifyAuthRedirect } from '@/lib/auth-feedback';
 import { isAuthenticated } from '@/lib/auth';
 
 export function AuthenticatedLayout() {
 	const location = useLocation();
+	const authed = isAuthenticated();
 
-	return isAuthenticated() ? (
+	useEffect(() => {
+		if (!authed) {
+			notifyAuthRedirect();
+		}
+	}, [authed]);
+
+	if (!authed) {
+		return <Navigate to="/login" replace />;
+	}
+
+	return (
 		<main className="min-h-screen bg-gray-100">
 			<header className="flex items-center justify-between border-gray-200 border-b bg-white px-12 py-4">
 				<Link to="/">
@@ -35,7 +48,5 @@ export function AuthenticatedLayout() {
 				<Outlet />
 			</main>
 		</main>
-	) : (
-		<Navigate to="/login" replace />
 	);
 }

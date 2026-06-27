@@ -17,7 +17,8 @@ import {
 	UtensilsIcon,
 } from 'lucide-react';
 import type { ElementType } from 'react';
-import { tv, type VariantProps } from 'tailwind-variants';
+import { tv } from 'tailwind-variants';
+import type { TagColor } from '@/components/tag';
 
 const iconTag = tv({
 	slots: {
@@ -25,33 +26,23 @@ const iconTag = tv({
 		icon: '',
 	},
 	variants: {
-		category: {
-			salary: { wrapper: 'bg-green-light', icon: 'text-green-base' },
-			transport: { wrapper: 'bg-purple-light', icon: 'text-purple-base' },
-			health: { wrapper: 'bg-red-light', icon: 'text-red-base' },
-			investment: { wrapper: 'bg-green-light', icon: 'text-green-base' },
-			groceries: { wrapper: 'bg-orange-light', icon: 'text-orange-base' },
-			entertainment: { wrapper: 'bg-pink-light', icon: 'text-pink-base' },
-			utilities: { wrapper: 'bg-yellow-light', icon: 'text-yellow-base' },
-			food: { wrapper: 'bg-blue-light', icon: 'text-blue-base' },
-			pets: { wrapper: 'bg-orange-light', icon: 'text-orange-base' },
-			home: { wrapper: 'bg-blue-light', icon: 'text-blue-base' },
-			gifts: { wrapper: 'bg-pink-light', icon: 'text-pink-base' },
-			fitness: { wrapper: 'bg-red-light', icon: 'text-red-base' },
-			education: { wrapper: 'bg-purple-light', icon: 'text-purple-base' },
-			travel: { wrapper: 'bg-blue-light', icon: 'text-blue-base' },
-			mail: { wrapper: 'bg-yellow-light', icon: 'text-yellow-base' },
-			bills: { wrapper: 'bg-yellow-light', icon: 'text-yellow-base' },
+		color: {
+			gray: { wrapper: 'bg-gray-200', icon: 'text-gray-700' },
+			blue: { wrapper: 'bg-blue-light', icon: 'text-blue-base' },
+			purple: { wrapper: 'bg-purple-light', icon: 'text-purple-base' },
+			pink: { wrapper: 'bg-pink-light', icon: 'text-pink-base' },
+			red: { wrapper: 'bg-red-light', icon: 'text-red-base' },
+			orange: { wrapper: 'bg-orange-light', icon: 'text-orange-base' },
+			yellow: { wrapper: 'bg-yellow-light', icon: 'text-yellow-base' },
+			green: { wrapper: 'bg-green-light', icon: 'text-green-base' },
 		},
 	},
 	defaultVariants: {
-		category: 'food',
+		color: 'gray',
 	},
 });
 
-export type CategoryType = keyof typeof iconTag.variants.category;
-
-export const CATEGORY_ICONS: Record<CategoryType, ElementType> = {
+export const CATEGORY_ICONS = {
 	salary: BriefcaseBusinessIcon,
 	transport: CarFrontIcon,
 	health: HeartPulseIcon,
@@ -68,7 +59,9 @@ export const CATEGORY_ICONS: Record<CategoryType, ElementType> = {
 	travel: BaggageClaimIcon,
 	mail: MailboxIcon,
 	bills: ReceiptTextIcon,
-};
+} satisfies Record<string, ElementType>;
+
+export type CategoryType = keyof typeof CATEGORY_ICONS;
 
 export const CATEGORY_LABELS: Record<CategoryType, string> = {
 	salary: 'Salário',
@@ -89,9 +82,14 @@ export const CATEGORY_LABELS: Record<CategoryType, string> = {
 	bills: 'Contas',
 };
 
-export function CategoryIcon({ category }: VariantProps<typeof iconTag>) {
-	const { wrapper, icon } = iconTag({ category });
-	const Icon = CATEGORY_ICONS[category || 'food'];
+type Props = {
+	category: CategoryType;
+	color?: TagColor;
+};
+
+export function CategoryIcon({ category, color }: Props) {
+	const { wrapper, icon } = iconTag({ color });
+	const Icon = CATEGORY_ICONS[category];
 
 	return (
 		<div className={wrapper()}>

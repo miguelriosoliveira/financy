@@ -1,5 +1,5 @@
 import { CombinedGraphQLErrors, gql } from '@apollo/client';
-import { useMutation } from '@apollo/client/react';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { createCategorySchema, ERROR_CODES } from '@financy/shared';
 import { ArrowUpDownIcon, PlusIcon, TagIcon, UtensilsIcon } from 'lucide-react';
 import { type SubmitEvent, useState } from 'react';
@@ -23,6 +23,18 @@ import { ColorSelector } from './components/color-selector';
 import { HeaderCard } from './components/header-card';
 import { IconSelector } from './components/icon-selector';
 
+const GET_CATEGORIES = gql`
+	query GetCategories {
+		getCategories {
+			id
+			name
+			description
+			icon
+			color
+		}
+	}
+`;
+
 const CREATE_CATEGORY = gql`
 	mutation CreateCategory($data: CreateCategoryInput!) {
 		createCategory(data: $data) {
@@ -34,6 +46,18 @@ const CREATE_CATEGORY = gql`
 		}
 	}
 `;
+
+type CategoryRow = {
+	id: string;
+	name: string;
+	description: string | null;
+	icon: CategoryType;
+	color: TagColor;
+};
+
+type GetCategoriesResult = {
+	getCategories: CategoryRow[];
+};
 
 const CATEGORY_FIELD_MESSAGES: Record<'name', string> = {
 	name: 'Informe o título da categoria',
@@ -50,7 +74,10 @@ export function CategoriesPage() {
 	const [icon, setIcon] = useState<CategoryType>('salary');
 	const [color, setColor] = useState<TagColor>('green');
 	const [errors, setErrors] = useState<Partial<Record<'name', string>>>({});
-	const [createCategory, { loading }] = useMutation(CREATE_CATEGORY);
+	const { data, loading: loadingCategories } = useQuery<GetCategoriesResult>(GET_CATEGORIES);
+	const [createCategory, { loading: creatingCategory }] = useMutation(CREATE_CATEGORY);
+
+	const categories = data?.getCategories ?? [];
 
 	function resetForm() {
 		setName('');
@@ -71,7 +98,11 @@ export function CategoriesPage() {
 			return;
 		}
 		setErrors({});
-		createCategory({ variables: { data: result.data } })
+		createCategory({
+			variables: { data: result.data },
+			refetchQueries: [{ query: GET_CATEGORIES }],
+			awaitRefetchQueries: true,
+		})
 			.then(() => {
 				toast.success('Categoria criada com sucesso');
 				resetForm();
@@ -139,7 +170,7 @@ export function CategoriesPage() {
 							/>
 							<IconSelector value={icon} onChange={setIcon} />
 							<ColorSelector value={color} onChange={setColor} />
-							<SubmitButton text="Salvar" loading={loading} />
+							<SubmitButton text="Salvar" loading={creatingCategory} />
 						</form>
 					</DialogContent>
 				</Dialog>
@@ -149,7 +180,7 @@ export function CategoriesPage() {
 				<HeaderCard
 					icon={<TagIcon className="text-gray-700" />}
 					title="Total de categorias"
-					value="8"
+					value={String(categories.length)}
 				/>
 				<HeaderCard
 					icon={<ArrowUpDownIcon className="text-purple-base" />}
@@ -163,80 +194,26 @@ export function CategoriesPage() {
 				/>
 			</div>
 
-			<div className="grid grid-cols-4 gap-4">
-				<CategoryCard
-					category="food"
-					title="Alimentação"
-					description="Restaurantes, delivery e refeições"
-					itemCount={10}
-					color="blue"
-					onDelete={handleDeleteCategory}
-					onEdit={handleEditCategory}
-				/>
-				<CategoryCard
-					category="entertainment"
-					title="Entretimento"
-					description="Cinema, jogos e lazer"
-					itemCount={2}
-					color="pink"
-					onDelete={handleDeleteCategory}
-					onEdit={handleEditCategory}
-				/>
-				<CategoryCard
-					category="investment"
-					title="Investimento"
-					description="Aplicações e retornos financeiros"
-					itemCount={1}
-					color="green"
-					onDelete={handleDeleteCategory}
-					onEdit={handleEditCategory}
-				/>
-				<CategoryCard
-					category="groceries"
-					title="Mercado"
-					description="Compras de supermercado e mantimentos"
-					itemCount={3}
-					color="orange"
-					onDelete={handleDeleteCategory}
-					onEdit={handleEditCategory}
-				/>
-				<CategoryCard
-					category="salary"
-					title="Salário"
-					description="Renda mensal e bonificações"
-					itemCount={3}
-					color="green"
-					onDelete={handleDeleteCategory}
-					onEdit={handleEditCategory}
-				/>
-				<CategoryCard
-					category="health"
-					title="Saúde"
-					description="Medicamentos, consultas e exames"
-					itemCount={0}
-					color="red"
-					onDelete={handleDeleteCategory}
-					onEdit={handleEditCategory}
-				/>
-				<CategoryCard
-					category="transport"
-					title="Transporte"
-					description="Gasolina, transporte público e viagens"
-					itemCount={8}
-					color="purple"
-					onDelete={handleDeleteCategory}
-					onEdit={handleEditCategory}
-				/>
-				<CategoryCard
-					category="utilities"
-					title="Utilidades"
-					description="Energia, água, internet e telefone"
-					itemCount={7}
-					color="yellow"
-					onDelete={handleDeleteCategory}
-					onEdit={handleEditCategory}
-				/>
-			</div>
+			{loadingCategories ? (
+				<p className="font-light text-gray-600">Carregando categorias...</p>
+			) : categories.length === 0 ? (
+				<p className="font-light text-gray-600">Nenhuma categoria ainda</p>
+			) : (
+				<div className="grid grid-cols-4 gap-4">
+					{categories.map(category => (
+						<CategoryCard
+							key={category.id}
+							category={category.icon}
+							title={category.name}
+							description={category.description ?? ''}
+							itemCount={0}
+							color={category.color}
+							onDelete={handleDeleteCategory}
+							onEdit={handleEditCategory}
+						/>
+					))}
+				</div>
+			)}
 		</div>
 	);
 }

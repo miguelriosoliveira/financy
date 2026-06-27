@@ -16,6 +16,18 @@ vi.mock('react-toastify', () => ({
 	},
 }));
 
+const GET_CATEGORIES = gql`
+	query GetCategories {
+		getCategories {
+			id
+			name
+			description
+			icon
+			color
+		}
+	}
+`;
+
 const CREATE_CATEGORY = gql`
 	mutation CreateCategory($data: CreateCategoryInput!) {
 		createCategory(data: $data) {
@@ -40,6 +52,21 @@ const CATEGORY_FIELD_MESSAGES = {
 } as const;
 
 const CATEGORY_ALREADY_EXISTS_MESSAGE = 'Já existe uma categoria com esse título';
+
+type CategoryMock = {
+	id: string;
+	name: string;
+	description: string | null;
+	icon: string;
+	color: string;
+};
+
+function getCategoriesMock(categories: CategoryMock[] = []): MockLink.MockedResponse {
+	return {
+		request: { query: GET_CATEGORIES },
+		result: { data: { getCategories: categories } },
+	};
+}
 
 function createCategorySuccessMock(data = VALID_CATEGORY): MockLink.MockedResponse {
 	return {
@@ -98,7 +125,9 @@ describe('CategoriesPage', () => {
 	});
 
 	it('renders the create trigger and form fields after opening the dialog', async () => {
-		renderWithProviders(<CategoriesPage />);
+		renderWithProviders(<CategoriesPage />, {
+			mocks: [getCategoriesMock()],
+		});
 
 		expect(screen.getByRole('button', { name: 'Nova categoria' })).toBeInTheDocument();
 
@@ -109,9 +138,43 @@ describe('CategoriesPage', () => {
 		expect(screen.getByRole('button', { name: 'Salvar' })).toBeInTheDocument();
 	});
 
+	it('renders categories from the query and shows the total count', async () => {
+		const categories: CategoryMock[] = [
+			{
+				id: 'uuid-1',
+				name: 'Alimentação',
+				description: 'Restaurantes e delivery',
+				icon: 'food',
+				color: 'blue',
+			},
+			{
+				id: 'uuid-2',
+				name: 'Transporte',
+				description: null,
+				icon: 'transport',
+				color: 'purple',
+			},
+		];
+
+		renderWithProviders(<CategoriesPage />, {
+			mocks: [getCategoriesMock(categories)],
+		});
+
+		await waitFor(() => {
+			expect(screen.queryByText('Carregando categorias...')).not.toBeInTheDocument();
+		});
+
+		expect(screen.getByRole('heading', { level: 3, name: 'Alimentação' })).toBeInTheDocument();
+		expect(screen.getByRole('heading', { level: 3, name: 'Transporte' })).toBeInTheDocument();
+
+		const totalLabel = screen.getByText('Total de categorias');
+		const card = totalLabel.closest('[data-slot=card-content]');
+		expect(card).toHaveTextContent('2');
+	});
+
 	it('shows the title validation message when submitting with an empty title', async () => {
 		renderWithProviders(<CategoriesPage />, {
-			mocks: [createCategorySuccessMock()],
+			mocks: [getCategoriesMock(), createCategorySuccessMock()],
 		});
 
 		const user = await openCreateCategoryDialog();
@@ -123,8 +186,20 @@ describe('CategoriesPage', () => {
 	});
 
 	it('creates a category successfully with default icon and color', async () => {
+		const createdCategory: CategoryMock = {
+			id: 'uuid-1',
+			name: VALID_CATEGORY.name,
+			description: null,
+			icon: VALID_CATEGORY.icon,
+			color: VALID_CATEGORY.color,
+		};
+
 		renderWithProviders(<CategoriesPage />, {
-			mocks: [createCategorySuccessMock()],
+			mocks: [
+				getCategoriesMock(),
+				createCategorySuccessMock(),
+				getCategoriesMock([createdCategory]),
+			],
 		});
 
 		const user = await openCreateCategoryDialog();
@@ -140,7 +215,7 @@ describe('CategoriesPage', () => {
 
 	it('shows a field error and toast when the category name already exists', async () => {
 		renderWithProviders(<CategoriesPage />, {
-			mocks: [createCategoryDuplicateMock()],
+			mocks: [getCategoriesMock(), createCategoryDuplicateMock()],
 		});
 
 		const user = await openCreateCategoryDialog();
@@ -158,7 +233,7 @@ describe('CategoriesPage', () => {
 
 	it('shows a generic error toast when category creation fails unexpectedly', async () => {
 		renderWithProviders(<CategoriesPage />, {
-			mocks: [createCategoryUnexpectedErrorMock()],
+			mocks: [getCategoriesMock(), createCategoryUnexpectedErrorMock()],
 		});
 
 		const user = await openCreateCategoryDialog();
