@@ -8,16 +8,17 @@ import { createAppContainer } from './container.ts';
 import { env } from './env.ts';
 import { AuthResolver } from './resolvers/auth.resolver.ts';
 import { CategoryResolver } from './resolvers/category.resolver.ts';
-import { UserResolver } from './resolvers/user.resolver.ts';
+import { HealthResolver } from './resolvers/health.resolver.ts';
 
 const isTest = process.env.NODE_ENV === 'test';
 
 export async function initServer() {
 	const { container, dbClient } = createAppContainer();
+	await dbClient.connect();
 	const app = express();
 	const server = new ApolloServer({
 		schema: await buildSchema({
-			resolvers: [AuthResolver, UserResolver, CategoryResolver],
+			resolvers: [AuthResolver, HealthResolver, CategoryResolver],
 			validate: false,
 			// Avoid rewriting the committed schema file during test runs.
 			emitSchemaFile: isTest ? false : './schema.graphql',

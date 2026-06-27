@@ -27,9 +27,6 @@ export class PrismaDbClient implements DbClient, DbUserClient, DbCategoryClient 
 	}
 
 	user = {
-		findById: (id: string): Promise<UserModel | null> =>
-			this.client.user.findUnique({ where: { id } }),
-
 		findByEmail: (email: string): Promise<UserModel | null> =>
 			this.client.user.findUnique({ where: { email } }),
 

@@ -3,12 +3,11 @@ import { DbCategoryRepository } from './repositories/category.repository.ts';
 import { DbUserRepository } from './repositories/user.repository.ts';
 import { AuthResolver } from './resolvers/auth.resolver.ts';
 import { CategoryResolver } from './resolvers/category.resolver.ts';
-import { UserResolver } from './resolvers/user.resolver.ts';
+import { HealthResolver } from './resolvers/health.resolver.ts';
 import { AuthService } from './services/auth.service.ts';
 import { CategoryService } from './services/category.service.ts';
 import { HashService } from './services/hash.service.ts';
 import { JwtService } from './services/jwt.service.ts';
-import { UserService } from './services/user.service.ts';
 
 /**
  * type-graphql instantiates resolvers through a container. Since the resolvers
@@ -31,12 +30,11 @@ export function createAppContainer(): AppContainer {
 	const hashService = new HashService();
 	const jwtService = new JwtService();
 	const authService = new AuthService(userRepository, hashService, jwtService);
-	const userService = new UserService(userRepository);
 	const categoryService = new CategoryService(categoryRepository);
 
 	const instances = new Map<unknown, unknown>([
 		[AuthResolver, new AuthResolver(authService)],
-		[UserResolver, new UserResolver(userService)],
+		[HealthResolver, new HealthResolver()],
 		[CategoryResolver, new CategoryResolver(categoryService)],
 	]);
 

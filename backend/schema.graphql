@@ -41,7 +41,7 @@ type Mutation {
 }
 
 type Query {
-  getUser(id: String!): UserModel!
+  health: String!
 }
 
 input RegisterInput {
