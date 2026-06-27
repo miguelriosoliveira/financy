@@ -41,6 +41,7 @@ type Mutation {
 }
 
 type Query {
+  getCategories: [CategoryModel!]!
   health: String!
 }
 

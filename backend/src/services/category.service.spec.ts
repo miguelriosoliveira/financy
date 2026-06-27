@@ -57,4 +57,31 @@ describe('CategoryService', () => {
 			expect(mockCategoryRepository.create).not.toHaveBeenCalled();
 		});
 	});
+
+	describe('findAll', () => {
+		it('returns all categories from the repository', async () => {
+			const categories = [
+				{
+					id: 'uuid-1',
+					name: 'Food',
+					description: 'Groceries and dining',
+					icon: 'utensils',
+					color: '#ff0000',
+				},
+				{
+					id: 'uuid-2',
+					name: 'Transport',
+					description: null,
+					icon: 'car',
+					color: '#0000ff',
+				},
+			] satisfies CategoryModel[];
+			mockCategoryRepository.findAll.mockResolvedValueOnce(categories);
+
+			const result = await categoryService.findAll();
+
+			expect(mockCategoryRepository.findAll).toHaveBeenCalledOnce();
+			expect(result).toBe(categories);
+		});
+	});
 });

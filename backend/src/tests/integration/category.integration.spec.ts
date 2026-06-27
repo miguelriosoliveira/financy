@@ -1,3 +1,4 @@
+import { ERROR_CODES } from '@financy/shared';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { setupTestApp, type TestApp } from '../helpers/test-app.ts';
@@ -5,6 +6,18 @@ import { setupTestApp, type TestApp } from '../helpers/test-app.ts';
 const CREATE_CATEGORY = /* GraphQL */ `
 	mutation CreateCategory($data: CreateCategoryInput!) {
 		createCategory(data: $data) {
+			id
+			name
+			description
+			icon
+			color
+		}
+	}
+`;
+
+const GET_CATEGORIES = /* GraphQL */ `
+	query GetCategories {
+		getCategories {
 			id
 			name
 			description
@@ -39,6 +52,7 @@ describe('Category (integration)', () => {
 
 		const response = await request(ctx.app)
 			.post('/graphql')
+			.set('Authorization', ctx.authHeader())
 			.send({ query: CREATE_CATEGORY, variables: { data } });
 
 		expect(response.status).toBe(200);
@@ -60,6 +74,7 @@ describe('Category (integration)', () => {
 
 		const response = await request(ctx.app)
 			.post('/graphql')
+			.set('Authorization', ctx.authHeader())
 			.send({ query: CREATE_CATEGORY, variables: { data } });
 
 		expect(response.status).toBe(200);
@@ -82,11 +97,13 @@ describe('Category (integration)', () => {
 
 		const first = await request(ctx.app)
 			.post('/graphql')
+			.set('Authorization', ctx.authHeader())
 			.send({ query: CREATE_CATEGORY, variables: { data } });
 		expect(first.body.errors).toBeUndefined();
 
 		const second = await request(ctx.app)
 			.post('/graphql')
+			.set('Authorization', ctx.authHeader())
 			.send({ query: CREATE_CATEGORY, variables: { data } });
 
 		expect(second.body.errors).toBeDefined();
@@ -107,6 +124,7 @@ describe('Category (integration)', () => {
 
 		const response = await request(ctx.app)
 			.post('/graphql')
+			.set('Authorization', ctx.authHeader())
 			.send({ query: CREATE_CATEGORY, variables: { data } });
 
 		expect(response.status).toBe(200);
@@ -118,5 +136,88 @@ describe('Category (integration)', () => {
 
 		const stored = await ctx.dbClient.category.findByName(data.name);
 		expect(stored).toBeNull();
+	});
+
+	it('rejects createCategory when unauthenticated', async () => {
+		const data = {
+			name: 'Food',
+			description: 'Groceries and dining',
+			icon: 'utensils',
+			color: '#ff0000',
+		};
+
+		const response = await request(ctx.app)
+			.post('/graphql')
+			.send({ query: CREATE_CATEGORY, variables: { data } });
+
+		expect(response.status).toBe(200);
+		expect(response.body.errors).toBeDefined();
+		expect(response.body.errors[0].message).toBe('Unauthorized');
+		expect(response.body.errors[0].extensions?.code).toBe(ERROR_CODES.UNAUTHENTICATED);
+		expect(response.body.data).toBeNull();
+
+		const stored = await ctx.dbClient.category.findByName(data.name);
+		expect(stored).toBeNull();
+	});
+
+	describe('getCategories', () => {
+		it('returns an empty list when no categories exist', async () => {
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({ query: GET_CATEGORIES });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeUndefined();
+			expect(response.body.data.getCategories).toEqual([]);
+		});
+
+		it('returns all categories when authenticated', async () => {
+			const data = {
+				name: 'Food',
+				description: 'Groceries and dining',
+				icon: 'utensils',
+				color: '#ff0000',
+			};
+
+			const createResponse = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({ query: CREATE_CATEGORY, variables: { data } });
+			expect(createResponse.body.errors).toBeUndefined();
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({ query: GET_CATEGORIES });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeUndefined();
+			expect(response.body.data.getCategories).toHaveLength(1);
+			expect(response.body.data.getCategories[0]).toMatchObject(data);
+		});
+
+		it('rejects getCategories when unauthenticated', async () => {
+			const response = await request(ctx.app).post('/graphql').send({ query: GET_CATEGORIES });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeDefined();
+			expect(response.body.errors[0].message).toBe('Unauthorized');
+			expect(response.body.errors[0].extensions?.code).toBe(ERROR_CODES.UNAUTHENTICATED);
+			expect(response.body.data).toBeNull();
+		});
+
+		it('rejects getCategories with an invalid token', async () => {
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', 'Bearer invalid-token')
+				.send({ query: GET_CATEGORIES });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeDefined();
+			expect(response.body.errors[0].message).toBe('Unauthorized');
+			expect(response.body.errors[0].extensions?.code).toBe(ERROR_CODES.UNAUTHENTICATED);
+			expect(response.body.data).toBeNull();
+		});
 	});
 });

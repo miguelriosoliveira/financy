@@ -21,6 +21,7 @@ interface ResolverContainer {
 export interface AppContainer {
 	container: ResolverContainer;
 	dbClient: PrismaDbClient;
+	jwtService: JwtService;
 }
 
 export function createAppContainer(): AppContainer {
@@ -48,5 +49,5 @@ export function createAppContainer(): AppContainer {
 		},
 	};
 
-	return { container, dbClient };
+	return { container, dbClient, jwtService };
 }
