@@ -3,8 +3,8 @@ import { Navigate, Outlet, useLocation } from 'react-router';
 import Logo from '@/assets/logo.svg';
 import { Link } from '@/components/link';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { notifyAuthRedirect } from '@/lib/auth-feedback';
 import { isAuthenticated } from '@/lib/auth';
+import { notifyAuthRedirect } from '@/lib/auth-feedback';
 
 export function AuthenticatedLayout() {
 	const location = useLocation();

@@ -3,8 +3,8 @@ import { SetContextLink } from '@apollo/client/link/context';
 import { ErrorLink } from '@apollo/client/link/error';
 import { ERROR_CODES } from '@financy/shared';
 import { env } from '../env.ts';
-import { notifyAuthRedirect } from './auth-feedback.ts';
 import { clearTokens, getToken } from './auth.ts';
+import { notifyAuthRedirect } from './auth-feedback.ts';
 import { navigateTo } from './navigation.ts';
 
 const authLink = new SetContextLink(prev => {
