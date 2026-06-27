@@ -35,10 +35,12 @@ export class PrismaDbClient implements DbClient, DbUserClient, DbCategoryClient 
 	};
 
 	category = {
+		create: (props: CategoryCreateProps): Promise<CategoryModel> =>
+			this.client.category.create({ data: props }),
+
 		findByName: (name: string): Promise<CategoryModel | null> =>
 			this.client.category.findUnique({ where: { name } }),
 
-		create: (props: CategoryCreateProps): Promise<CategoryModel> =>
-			this.client.category.create({ data: props }),
+		findAll: (): Promise<CategoryModel[]> => this.client.category.findMany(),
 	};
 }

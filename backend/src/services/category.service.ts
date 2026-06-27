@@ -16,4 +16,8 @@ export class CategoryService {
 		}
 		return this.categoryRepository.create({ name, description, icon, color });
 	}
+
+	async findAll(): Promise<CategoryModel[]> {
+		return this.categoryRepository.findAll();
+	}
 }

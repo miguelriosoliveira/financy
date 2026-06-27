@@ -6,5 +6,6 @@ export interface DbCategoryClient {
 	category: {
 		create(props: CategoryCreateProps): Promise<CategoryModel>;
 		findByName(name: string): Promise<CategoryModel | null>;
+		findAll(): Promise<CategoryModel[]>;
 	};
 }

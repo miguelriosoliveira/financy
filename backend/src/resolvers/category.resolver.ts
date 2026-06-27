@@ -1,5 +1,5 @@
 import { createCategorySchema } from '@financy/shared';
-import { Arg, Mutation, Resolver, UseMiddleware } from 'type-graphql';
+import { Arg, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql';
 import { CreateCategoryInput } from '../dtos/input/category.input.ts';
 import { Validate } from '../middlewares/validate.middleware.ts';
 import { CategoryModel } from '../models/category.model.ts';
@@ -16,5 +16,10 @@ export class CategoryResolver {
 		data: CreateCategoryInput,
 	): Promise<CategoryModel> {
 		return this.categoryService.create(data);
+	}
+
+	@Query(() => [CategoryModel])
+	async getCategories(): Promise<CategoryModel[]> {
+		return this.categoryService.findAll();
 	}
 }
