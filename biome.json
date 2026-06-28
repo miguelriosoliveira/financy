@@ -10,6 +10,7 @@
 		"includes": [
 			"**",
 			"!backend/schema.graphql",
+			"!backend/src/db/prisma",
 			"!frontend/src/components/ui",
 			"!frontend/components.json"
 		]
