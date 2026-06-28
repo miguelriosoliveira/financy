@@ -35,6 +35,7 @@ export function CategoryCard({
 							size="icon"
 							className="bg-white hover:bg-gray-200"
 							onClick={onDelete}
+							aria-label="Excluir categoria"
 						>
 							<TrashIcon className="text-destructive" />
 						</Button>
@@ -43,6 +44,7 @@ export function CategoryCard({
 							size="icon"
 							className="bg-white hover:bg-gray-200"
 							onClick={onEdit}
+							aria-label="Editar categoria"
 						>
 							<SquarePenIcon className="text-gray-700" />
 						</Button>

@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client';
 import type { MockLink } from '@apollo/client/testing';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/tests/helpers/render';
@@ -40,6 +40,18 @@ const CREATE_CATEGORY = gql`
 	}
 `;
 
+const EDIT_CATEGORY = gql`
+	mutation EditCategory($id: ID!, $data: UpdateCategoryInput!) {
+		editCategory(id: $id, data: $data) {
+			id
+			name
+			description
+			icon
+			color
+		}
+	}
+`;
+
 const VALID_CATEGORY = {
 	name: 'Alimentação',
 	description: '',
@@ -59,6 +71,21 @@ type CategoryMock = {
 	description: string | null;
 	icon: string;
 	color: string;
+};
+
+const EXISTING_CATEGORY: CategoryMock = {
+	id: 'uuid-1',
+	name: 'Alimentação',
+	description: 'Restaurantes e delivery',
+	icon: 'food',
+	color: 'blue',
+};
+
+const UPDATED_CATEGORY = {
+	name: 'Alimentação Atualizada',
+	description: 'Restaurantes e delivery',
+	icon: 'food',
+	color: 'blue',
 };
 
 function getCategoriesMock(categories: CategoryMock[] = []): MockLink.MockedResponse {
@@ -113,9 +140,70 @@ function createCategoryUnexpectedErrorMock(data = VALID_CATEGORY): MockLink.Mock
 	};
 }
 
+function editCategorySuccessMock(
+	id = EXISTING_CATEGORY.id,
+	data = UPDATED_CATEGORY,
+): MockLink.MockedResponse {
+	return {
+		request: {
+			query: EDIT_CATEGORY,
+			variables: { id, data },
+		},
+		result: {
+			data: {
+				editCategory: {
+					id,
+					...data,
+					description: data.description || null,
+				},
+			},
+		},
+	};
+}
+
+function editCategoryDuplicateMock(
+	id = EXISTING_CATEGORY.id,
+	data = UPDATED_CATEGORY,
+): MockLink.MockedResponse {
+	return {
+		request: {
+			query: EDIT_CATEGORY,
+			variables: { id, data },
+		},
+		result: {
+			errors: [
+				{
+					message: 'Category already exists',
+					extensions: { code: 'CATEGORY_ALREADY_EXISTS' },
+				},
+			],
+		},
+	};
+}
+
 async function openCreateCategoryDialog() {
 	const user = userEvent.setup();
 	await user.click(screen.getByRole('button', { name: 'Nova categoria' }));
+	return user;
+}
+
+async function openEditCategoryDialog(categoryName = EXISTING_CATEGORY.name) {
+	const user = userEvent.setup();
+
+	await waitFor(() => {
+		expect(screen.getByRole('heading', { level: 3, name: categoryName })).toBeInTheDocument();
+	});
+
+	const cardHeading = screen.getByRole('heading', { level: 3, name: categoryName });
+	const card = cardHeading.closest('[data-slot=card]');
+	expect(card).not.toBeNull();
+
+	await user.click(within(card as HTMLElement).getByRole('button', { name: 'Editar categoria' }));
+
+	await waitFor(() => {
+		expect(screen.getByRole('dialog', { name: 'Editar categoria' })).toBeInTheDocument();
+	});
+
 	return user;
 }
 
@@ -245,6 +333,72 @@ describe('CategoriesPage', () => {
 		});
 
 		expect(screen.queryByText(CATEGORY_ALREADY_EXISTS_MESSAGE)).not.toBeInTheDocument();
+		expect(mockToastSuccess).not.toHaveBeenCalled();
+	});
+
+	it('opens the edit dialog with prefilled values from the selected category', async () => {
+		renderWithProviders(<CategoriesPage />, {
+			mocks: [getCategoriesMock([EXISTING_CATEGORY])],
+		});
+
+		await openEditCategoryDialog();
+
+		const dialog = screen.getByRole('dialog', { name: 'Editar categoria' });
+		expect(within(dialog).getByLabelText('Título')).toHaveValue(EXISTING_CATEGORY.name);
+		expect(within(dialog).getByLabelText('Descrição')).toHaveValue(EXISTING_CATEGORY.description);
+	});
+
+	it('edits a category successfully', async () => {
+		const editedCategory: CategoryMock = {
+			id: EXISTING_CATEGORY.id,
+			name: UPDATED_CATEGORY.name,
+			description: UPDATED_CATEGORY.description,
+			icon: UPDATED_CATEGORY.icon,
+			color: UPDATED_CATEGORY.color,
+		};
+
+		renderWithProviders(<CategoriesPage />, {
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY]),
+				editCategorySuccessMock(),
+				getCategoriesMock([editedCategory]),
+			],
+		});
+
+		const user = await openEditCategoryDialog();
+		const dialog = screen.getByRole('dialog', { name: 'Editar categoria' });
+		const titleInput = within(dialog).getByLabelText('Título');
+
+		await user.clear(titleInput);
+		await user.type(titleInput, UPDATED_CATEGORY.name);
+		await user.click(within(dialog).getByRole('button', { name: 'Salvar' }));
+
+		await waitFor(() => {
+			expect(mockToastSuccess).toHaveBeenCalledWith('Categoria editada com sucesso');
+		});
+
+		expect(mockToastError).not.toHaveBeenCalled();
+	});
+
+	it('shows a field error and toast when editing to an existing category name', async () => {
+		renderWithProviders(<CategoriesPage />, {
+			mocks: [getCategoriesMock([EXISTING_CATEGORY]), editCategoryDuplicateMock()],
+		});
+
+		const user = await openEditCategoryDialog();
+		const dialog = screen.getByRole('dialog', { name: 'Editar categoria' });
+		const titleInput = within(dialog).getByLabelText('Título');
+
+		await user.clear(titleInput);
+		await user.type(titleInput, UPDATED_CATEGORY.name);
+		await user.click(within(dialog).getByRole('button', { name: 'Salvar' }));
+
+		expect(await within(dialog).findByText(CATEGORY_ALREADY_EXISTS_MESSAGE)).toBeInTheDocument();
+
+		await waitFor(() => {
+			expect(mockToastError).toHaveBeenCalledWith(CATEGORY_ALREADY_EXISTS_MESSAGE);
+		});
+
 		expect(mockToastSuccess).not.toHaveBeenCalled();
 	});
 });

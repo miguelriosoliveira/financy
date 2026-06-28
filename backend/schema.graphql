@@ -9,6 +9,7 @@ type CategoryModel {
   icon: String!
   id: ID!
   name: String!
+  userId: ID!
 }
 
 input CreateCategoryInput {
@@ -36,6 +37,7 @@ type LoginOutput {
 
 type Mutation {
   createCategory(data: CreateCategoryInput!): CategoryModel!
+  editCategory(data: UpdateCategoryInput!, id: ID!): CategoryModel!
   login(data: LoginInput!): LoginOutput!
   register(data: RegisterInput!): RegisterOutput!
 }
@@ -53,6 +55,13 @@ input RegisterInput {
 
 type RegisterOutput {
   success: Boolean!
+}
+
+input UpdateCategoryInput {
+  color: String!
+  description: String
+  icon: String!
+  name: String!
 }
 
 type UserModel {
