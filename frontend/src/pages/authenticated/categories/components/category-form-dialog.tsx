@@ -115,7 +115,9 @@ export function CategoryFormDialog({
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle className="text-base">{copy.title}</DialogTitle>
-					<DialogDescription className="font-light text-gray-600">{copy.description}</DialogDescription>
+					<DialogDescription className="font-light text-gray-600">
+						{copy.description}
+					</DialogDescription>
 				</DialogHeader>
 				<form noValidate onSubmit={handleSubmit} className="flex flex-col gap-4">
 					<FormField
