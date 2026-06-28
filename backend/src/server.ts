@@ -1,11 +1,10 @@
 import 'reflect-metadata';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express5';
-import { ERROR_CODES } from '@financy/shared';
 import cors from 'cors';
 import express from 'express';
-import { GraphQLError } from 'graphql';
 import { buildSchema } from 'type-graphql';
+import { authChecker } from './auth/auth-checker.ts';
 import { createAppContainer } from './container.ts';
 import { buildContext, type GraphQLContext } from './context.ts';
 import { env } from './env.ts';
@@ -21,19 +20,11 @@ export async function initServer() {
 	const app = express();
 	const server = new ApolloServer<GraphQLContext>({
 		schema: await buildSchema({
-			resolvers: [AuthResolver, HealthResolver, CategoryResolver],
+			resolvers: [HealthResolver, AuthResolver, CategoryResolver],
 			validate: false,
-			// Avoid rewriting the committed schema file during test runs.
-			emitSchemaFile: isTest ? false : './schema.graphql',
+			emitSchemaFile: isTest ? false : './schema.graphql', // Avoid rewriting the schema file during test runs
 			container,
-			authChecker: ({ context }) => {
-				if (!context.user) {
-					throw new GraphQLError('Unauthorized', {
-						extensions: { code: ERROR_CODES.UNAUTHENTICATED },
-					});
-				}
-				return true;
-			},
+			authChecker,
 		}),
 	});
 	await server.start();
