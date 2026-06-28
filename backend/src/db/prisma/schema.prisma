@@ -15,15 +15,20 @@ model User {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   transactions Transaction[]
+  categories   Category[]
 }
 
 model Category {
   id           String        @id @default(uuid())
-  name         String        @unique
+  name         String
   description  String?
   icon         String
   color        String
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
   transactions Transaction[]
+
+  @@unique([userId, name])
 }
 
 model Transaction {

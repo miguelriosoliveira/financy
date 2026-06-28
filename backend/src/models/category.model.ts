@@ -16,4 +16,7 @@ export class CategoryModel {
 
 	@Field(() => String)
 	color!: string;
+
+	@Field(() => ID)
+	userId!: string;
 }

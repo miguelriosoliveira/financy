@@ -6,5 +6,7 @@ export const createCategorySchema = z.object({
 	icon: z.string().trim().min(1, 'Icon is required'),
 	color: z.string().trim().min(1, 'Color is required'),
 });
-
 export type CreateCategoryInputType = z.infer<typeof createCategorySchema>;
+
+export const updateCategorySchema = createCategorySchema;
+export type UpdateCategoryInputType = z.infer<typeof updateCategorySchema>;
