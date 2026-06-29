@@ -14,5 +14,6 @@ export interface DbCategoryClient {
 		findByName(userId: string, name: string): Promise<CategoryModel | null>;
 		findAll(userId: string): Promise<CategoryModel[]>;
 		update(id: string, props: CategoryUpdateProps): Promise<CategoryModel>;
+		delete(id: string): Promise<CategoryModel>;
 	};
 }

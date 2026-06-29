@@ -175,4 +175,52 @@ describe('CategoryService', () => {
 			expect(mockCategoryRepository.update).not.toHaveBeenCalled();
 		});
 	});
+
+	describe('delete', () => {
+		const categoryId = 'uuid-1';
+		const existing = {
+			id: categoryId,
+			userId: USER_ID,
+			name: 'Food',
+			description: 'Groceries and dining',
+			icon: 'utensils',
+			color: '#ff0000',
+		} satisfies CategoryModel;
+
+		it('deletes an owned category and returns it', async () => {
+			mockCategoryRepository.findById.mockResolvedValueOnce(existing);
+			mockCategoryRepository.delete.mockResolvedValueOnce(existing);
+
+			const result = await categoryService.delete(USER_ID, categoryId);
+
+			expect(mockCategoryRepository.findById).toHaveBeenCalledWith(categoryId);
+			expect(mockCategoryRepository.delete).toHaveBeenCalledWith(categoryId);
+			expect(result).toBe(existing);
+		});
+
+		it('throws CATEGORY_NOT_FOUND when the id does not exist', async () => {
+			mockCategoryRepository.findById.mockResolvedValueOnce(null);
+
+			const error = await categoryService.delete(USER_ID, categoryId).catch(error => error);
+
+			expect(error).toBeInstanceOf(GraphQLError);
+			expect((error as GraphQLError).message).toBe('Category not found');
+			expect((error as GraphQLError).extensions?.code).toBe(ERROR_CODES.CATEGORY_NOT_FOUND);
+			expect(mockCategoryRepository.delete).not.toHaveBeenCalled();
+		});
+
+		it('throws CATEGORY_NOT_FOUND when owned by another user', async () => {
+			mockCategoryRepository.findById.mockResolvedValueOnce({
+				...existing,
+				userId: OTHER_USER_ID,
+			});
+
+			const error = await categoryService.delete(USER_ID, categoryId).catch(error => error);
+
+			expect(error).toBeInstanceOf(GraphQLError);
+			expect((error as GraphQLError).message).toBe('Category not found');
+			expect((error as GraphQLError).extensions?.code).toBe(ERROR_CODES.CATEGORY_NOT_FOUND);
+			expect(mockCategoryRepository.delete).not.toHaveBeenCalled();
+		});
+	});
 });

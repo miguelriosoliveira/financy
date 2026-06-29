@@ -11,6 +11,7 @@ export interface CategoryRepository {
 	findByName(userId: string, name: string): Promise<CategoryModel | null>;
 	findAll(userId: string): Promise<CategoryModel[]>;
 	update(id: string, props: CategoryUpdateProps): Promise<CategoryModel>;
+	delete(id: string): Promise<CategoryModel>;
 }
 
 export class DbCategoryRepository implements CategoryRepository {
@@ -34,5 +35,9 @@ export class DbCategoryRepository implements CategoryRepository {
 
 	async update(id: string, props: CategoryUpdateProps): Promise<CategoryModel> {
 		return this.dbCategoryClient.category.update(id, props);
+	}
+
+	async delete(id: string): Promise<CategoryModel> {
+		return this.dbCategoryClient.category.delete(id);
 	}
 }

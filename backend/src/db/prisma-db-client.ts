@@ -53,5 +53,7 @@ export class PrismaDbClient implements DbClient, DbUserClient, DbCategoryClient 
 
 		update: (id: string, props: CategoryUpdateProps): Promise<CategoryModel> =>
 			this.client.category.update({ where: { id }, data: props }),
+
+		delete: (id: string): Promise<CategoryModel> => this.client.category.delete({ where: { id } }),
 	};
 }

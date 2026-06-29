@@ -47,4 +47,15 @@ export class CategoryService {
 
 		return this.categoryRepository.update(id, { name, description, icon, color });
 	}
+
+	async delete(userId: string, id: string): Promise<CategoryModel> {
+		const category = await this.categoryRepository.findById(id);
+		if (!category || category.userId !== userId) {
+			throw new GraphQLError('Category not found', {
+				extensions: { code: ERROR_CODES.CATEGORY_NOT_FOUND },
+			});
+		}
+
+		return this.categoryRepository.delete(id);
+	}
 }

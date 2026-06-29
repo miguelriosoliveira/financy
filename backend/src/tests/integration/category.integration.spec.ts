@@ -39,6 +39,18 @@ const GET_CATEGORIES = /* GraphQL */ `
 	}
 `;
 
+const DELETE_CATEGORY = /* GraphQL */ `
+	mutation DeleteCategory($id: ID!) {
+		deleteCategory(id: $id) {
+			id
+			name
+			description
+			icon
+			color
+		}
+	}
+`;
+
 describe('Category (integration)', () => {
 	let ctx: TestApp;
 
@@ -412,6 +424,147 @@ describe('Category (integration)', () => {
 			expect(response.body.errors[0].extensions?.code).toBe('BAD_USER_INPUT');
 			expect(response.body.errors[0].extensions?.issues?.name).toBeDefined();
 			expect(response.body.data).toBeNull();
+		});
+	});
+
+	describe('deleteCategory', () => {
+		async function createCategoryForUser(
+			authOverrides?: Parameters<TestApp['authHeader']>[0],
+			data = {
+				name: 'Food',
+				description: 'Groceries and dining',
+				icon: 'utensils',
+				color: '#ff0000',
+			},
+		) {
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader(authOverrides))
+				.send({ query: CREATE_CATEGORY, variables: { data } });
+			expect(response.body.errors).toBeUndefined();
+			return response.body.data.createCategory as { id: string };
+		}
+
+		it('deletes an owned category and removes it from the database', async () => {
+			await ctx.createUser();
+			const created = await createCategoryForUser();
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({ query: DELETE_CATEGORY, variables: { id: created.id } });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeUndefined();
+			expect(response.body.data.deleteCategory).toMatchObject({
+				id: created.id,
+				name: 'Food',
+				description: 'Groceries and dining',
+				icon: 'utensils',
+				color: '#ff0000',
+			});
+
+			const stored = await ctx.dbClient.category.findById(created.id);
+			expect(stored).toBeNull();
+		});
+
+		it('allows recreating a category with the same name after deletion', async () => {
+			await ctx.createUser();
+			const data = {
+				name: 'Food',
+				description: 'Groceries and dining',
+				icon: 'utensils',
+				color: '#ff0000',
+			};
+			const created = await createCategoryForUser(undefined, data);
+
+			const duplicate = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({ query: CREATE_CATEGORY, variables: { data } });
+
+			expect(duplicate.status).toBe(200);
+			expect(duplicate.body.errors).toBeDefined();
+			expect(duplicate.body.errors[0].message).toBe('Category already exists');
+			expect(duplicate.body.errors[0].extensions?.code).toBe(ERROR_CODES.CATEGORY_ALREADY_EXISTS);
+
+			const deleteResponse = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({ query: DELETE_CATEGORY, variables: { id: created.id } });
+
+			expect(deleteResponse.status).toBe(200);
+			expect(deleteResponse.body.errors).toBeUndefined();
+
+			const recreate = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({ query: CREATE_CATEGORY, variables: { data } });
+
+			expect(recreate.status).toBe(200);
+			expect(recreate.body.errors).toBeUndefined();
+			expect(recreate.body.data.createCategory).toMatchObject(data);
+			expect(recreate.body.data.createCategory.id).not.toBe(created.id);
+			expect(recreate.body.data.createCategory.id).toEqual(expect.any(String));
+		});
+
+		it('returns CATEGORY_NOT_FOUND when deleting another user category', async () => {
+			await ctx.createUser();
+			await ctx.createUser({ id: 'other-user-id', email: 'other@example.com' });
+			const created = await createCategoryForUser({
+				id: 'other-user-id',
+				email: 'other@example.com',
+			});
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({ query: DELETE_CATEGORY, variables: { id: created.id } });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeDefined();
+			expect(response.body.errors[0].message).toBe('Category not found');
+			expect(response.body.errors[0].extensions?.code).toBe(ERROR_CODES.CATEGORY_NOT_FOUND);
+			expect(response.body.data).toBeNull();
+
+			const stored = await ctx.dbClient.category.findById(created.id);
+			expect(stored).not.toBeNull();
+		});
+
+		it('returns CATEGORY_NOT_FOUND for a non-existent id', async () => {
+			await ctx.createUser();
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({
+					query: DELETE_CATEGORY,
+					variables: { id: '00000000-0000-0000-0000-000000000000' },
+				});
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeDefined();
+			expect(response.body.errors[0].message).toBe('Category not found');
+			expect(response.body.errors[0].extensions?.code).toBe(ERROR_CODES.CATEGORY_NOT_FOUND);
+			expect(response.body.data).toBeNull();
+		});
+
+		it('rejects deleteCategory when unauthenticated', async () => {
+			await ctx.createUser();
+			const created = await createCategoryForUser();
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.send({ query: DELETE_CATEGORY, variables: { id: created.id } });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeDefined();
+			expect(response.body.errors[0].message).toBe('Unauthorized');
+			expect(response.body.errors[0].extensions?.code).toBe(ERROR_CODES.UNAUTHENTICATED);
+			expect(response.body.data).toBeNull();
+
+			const stored = await ctx.dbClient.category.findById(created.id);
+			expect(stored).not.toBeNull();
 		});
 	});
 });

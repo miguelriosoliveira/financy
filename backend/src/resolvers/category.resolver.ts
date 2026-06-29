@@ -36,4 +36,12 @@ export class CategoryResolver {
 	): Promise<CategoryModel> {
 		return this.categoryService.update(user.id, id, data);
 	}
+
+	@Mutation(() => CategoryModel)
+	async deleteCategory(
+		@Arg('id', () => ID) id: string,
+		@UserInfo() user: JwtPayload,
+	): Promise<CategoryModel> {
+		return this.categoryService.delete(user.id, id);
+	}
 }
