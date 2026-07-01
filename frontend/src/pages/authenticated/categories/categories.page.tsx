@@ -9,6 +9,7 @@ import type { TagColor } from '@/components/tag';
 import { CategoryCard } from './components/category-card';
 import { CategoryFormDialog } from './components/category-form-dialog';
 import type { CategoryType } from './components/category-icon';
+import { DeleteCategoryDialog } from './components/delete-category-dialog';
 import { HeaderCard } from './components/header-card';
 
 const GET_CATEGORIES = gql`
@@ -47,6 +48,14 @@ const EDIT_CATEGORY = gql`
 	}
 `;
 
+const DELETE_CATEGORY = gql`
+	mutation DeleteCategory($id: ID!) {
+		deleteCategory(id: $id) {
+			id
+		}
+	}
+`;
+
 type CategoryRow = {
 	id: string;
 	name: string;
@@ -74,12 +83,15 @@ function getGraphQLErrorCode(error: unknown): string | undefined {
 export function CategoriesPage() {
 	const [createOpen, setCreateOpen] = useState(false);
 	const [editOpen, setEditOpen] = useState(false);
+	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [editingTarget, setEditingTarget] = useState<CategoryRow | null>(null);
+	const [deletingTarget, setDeletingTarget] = useState<CategoryRow | null>(null);
 	const [createServerError, setCreateServerError] = useState<string>();
 	const [editServerError, setEditServerError] = useState<string>();
 	const { data, loading: loadingCategories } = useQuery<GetCategoriesResult>(GET_CATEGORIES);
 	const [createCategory, { loading: creatingCategory }] = useMutation(CREATE_CATEGORY);
 	const [editCategory, { loading: editingCategory }] = useMutation(EDIT_CATEGORY);
+	const [deleteCategory, { loading: deletingCategory }] = useMutation(DELETE_CATEGORY);
 
 	const categories = data?.getCategories ?? [];
 
@@ -138,8 +150,34 @@ export function CategoriesPage() {
 			});
 	}
 
-	function handleDeleteCategory() {
-		toast.error('Delete: Ainda não implementado');
+	function handleDeleteCategory(category: CategoryRow) {
+		setDeletingTarget(category);
+		setDeleteOpen(true);
+	}
+
+	function handleConfirmDelete() {
+		if (!deletingTarget) {
+			return;
+		}
+
+		deleteCategory({
+			variables: { id: deletingTarget.id },
+			refetchQueries: [{ query: GET_CATEGORIES }],
+			awaitRefetchQueries: true,
+		})
+			.then(() => {
+				toast.success('Categoria excluída com sucesso');
+				setDeleteOpen(false);
+				setDeletingTarget(null);
+			})
+			.catch((error: unknown) => {
+				const fieldMessage = CATEGORY_RESPONSE_FIELD_MESSAGES[getGraphQLErrorCode(error) ?? ''];
+				if (fieldMessage) {
+					toast.error(fieldMessage);
+					return;
+				}
+				toast.error('Erro ao excluir categoria');
+			});
 	}
 
 	return (
@@ -197,7 +235,7 @@ export function CategoriesPage() {
 							description={category.description ?? ''}
 							itemCount={0}
 							color={category.color}
-							onDelete={handleDeleteCategory}
+							onDelete={() => handleDeleteCategory(category)}
 							onEdit={() => handleEditCategory(category)}
 						/>
 					))}
@@ -227,6 +265,19 @@ export function CategoriesPage() {
 				onSubmit={handleEditCategorySubmit}
 				loading={editingCategory}
 				serverError={editServerError}
+			/>
+
+			<DeleteCategoryDialog
+				open={deleteOpen}
+				onOpenChange={open => {
+					setDeleteOpen(open);
+					if (!open) {
+						setDeletingTarget(null);
+					}
+				}}
+				categoryName={deletingTarget?.name}
+				onConfirm={handleConfirmDelete}
+				loading={deletingCategory}
 			/>
 		</div>
 	);

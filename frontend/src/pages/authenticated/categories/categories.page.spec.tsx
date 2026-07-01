@@ -52,6 +52,14 @@ const EDIT_CATEGORY = gql`
 	}
 `;
 
+const DELETE_CATEGORY = gql`
+	mutation DeleteCategory($id: ID!) {
+		deleteCategory(id: $id) {
+			id
+		}
+	}
+`;
+
 const VALID_CATEGORY = {
 	name: 'Alimentação',
 	description: '',
@@ -79,6 +87,14 @@ const EXISTING_CATEGORY: CategoryMock = {
 	description: 'Restaurantes e delivery',
 	icon: 'food',
 	color: 'blue',
+};
+
+const OTHER_CATEGORY: CategoryMock = {
+	id: 'uuid-2',
+	name: 'Transporte',
+	description: null,
+	icon: 'transport',
+	color: 'purple',
 };
 
 const UPDATED_CATEGORY = {
@@ -181,6 +197,30 @@ function editCategoryDuplicateMock(
 	};
 }
 
+function deleteCategorySuccessMock(id = EXISTING_CATEGORY.id): MockLink.MockedResponse {
+	return {
+		request: {
+			query: DELETE_CATEGORY,
+			variables: { id },
+		},
+		result: {
+			data: {
+				deleteCategory: { id },
+			},
+		},
+	};
+}
+
+function deleteCategoryUnexpectedErrorMock(id = EXISTING_CATEGORY.id): MockLink.MockedResponse {
+	return {
+		request: {
+			query: DELETE_CATEGORY,
+			variables: { id },
+		},
+		error: new Error('Network error'),
+	};
+}
+
 async function openCreateCategoryDialog() {
 	const user = userEvent.setup();
 	await user.click(screen.getByRole('button', { name: 'Nova categoria' }));
@@ -202,6 +242,26 @@ async function openEditCategoryDialog(categoryName = EXISTING_CATEGORY.name) {
 
 	await waitFor(() => {
 		expect(screen.getByRole('dialog', { name: 'Editar categoria' })).toBeInTheDocument();
+	});
+
+	return user;
+}
+
+async function openDeleteCategoryDialog(categoryName = EXISTING_CATEGORY.name) {
+	const user = userEvent.setup();
+
+	await waitFor(() => {
+		expect(screen.getByRole('heading', { level: 3, name: categoryName })).toBeInTheDocument();
+	});
+
+	const cardHeading = screen.getByRole('heading', { level: 3, name: categoryName });
+	const card = cardHeading.closest('[data-slot=card]');
+	expect(card).not.toBeNull();
+
+	await user.click(within(card as HTMLElement).getByRole('button', { name: 'Excluir categoria' }));
+
+	await waitFor(() => {
+		expect(screen.getByRole('dialog', { name: 'Excluir categoria' })).toBeInTheDocument();
 	});
 
 	return user;
@@ -399,6 +459,86 @@ describe('CategoriesPage', () => {
 			expect(mockToastError).toHaveBeenCalledWith(CATEGORY_ALREADY_EXISTS_MESSAGE);
 		});
 
+		expect(mockToastSuccess).not.toHaveBeenCalled();
+	});
+
+	it('opens the delete confirmation dialog when clicking the trash button', async () => {
+		renderWithProviders(<CategoriesPage />, {
+			mocks: [getCategoriesMock([EXISTING_CATEGORY])],
+		});
+
+		await openDeleteCategoryDialog();
+
+		const dialog = screen.getByRole('dialog', { name: 'Excluir categoria' });
+		expect(within(dialog).getByText(/Alimentação/)).toBeInTheDocument();
+		expect(mockToastSuccess).not.toHaveBeenCalled();
+		expect(mockToastError).not.toHaveBeenCalled();
+	});
+
+	it('closes the delete dialog without calling the mutation when cancelled', async () => {
+		renderWithProviders(<CategoriesPage />, {
+			mocks: [getCategoriesMock([EXISTING_CATEGORY])],
+		});
+
+		const user = await openDeleteCategoryDialog();
+		const dialog = screen.getByRole('dialog', { name: 'Excluir categoria' });
+		await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+
+		await waitFor(() => {
+			expect(screen.queryByRole('dialog', { name: 'Excluir categoria' })).not.toBeInTheDocument();
+		});
+
+		expect(
+			screen.getByRole('heading', { level: 3, name: EXISTING_CATEGORY.name }),
+		).toBeInTheDocument();
+		expect(mockToastSuccess).not.toHaveBeenCalled();
+	});
+
+	it('deletes a category successfully and removes it from the list', async () => {
+		renderWithProviders(<CategoriesPage />, {
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY, OTHER_CATEGORY]),
+				deleteCategorySuccessMock(),
+				getCategoriesMock([OTHER_CATEGORY]),
+			],
+		});
+
+		const user = await openDeleteCategoryDialog();
+		const dialog = screen.getByRole('dialog', { name: 'Excluir categoria' });
+		await user.click(within(dialog).getByRole('button', { name: 'Excluir' }));
+
+		await waitFor(() => {
+			expect(mockToastSuccess).toHaveBeenCalledWith('Categoria excluída com sucesso');
+		});
+
+		await waitFor(() => {
+			expect(
+				screen.queryByRole('heading', { level: 3, name: EXISTING_CATEGORY.name }),
+			).not.toBeInTheDocument();
+		});
+
+		expect(
+			screen.getByRole('heading', { level: 3, name: OTHER_CATEGORY.name }),
+		).toBeInTheDocument();
+		expect(mockToastError).not.toHaveBeenCalled();
+	});
+
+	it('shows a generic error toast when category deletion fails unexpectedly', async () => {
+		renderWithProviders(<CategoriesPage />, {
+			mocks: [getCategoriesMock([EXISTING_CATEGORY]), deleteCategoryUnexpectedErrorMock()],
+		});
+
+		const user = await openDeleteCategoryDialog();
+		const dialog = screen.getByRole('dialog', { name: 'Excluir categoria' });
+		await user.click(within(dialog).getByRole('button', { name: 'Excluir' }));
+
+		await waitFor(() => {
+			expect(mockToastError).toHaveBeenCalledWith('Erro ao excluir categoria');
+		});
+
+		expect(
+			screen.getByRole('heading', { level: 3, name: EXISTING_CATEGORY.name, hidden: true }),
+		).toBeInTheDocument();
 		expect(mockToastSuccess).not.toHaveBeenCalled();
 	});
 });

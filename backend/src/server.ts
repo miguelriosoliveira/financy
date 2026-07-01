@@ -3,14 +3,10 @@ import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express5';
 import cors from 'cors';
 import express from 'express';
-import { buildSchema } from 'type-graphql';
-import { authChecker } from './auth/auth-checker.ts';
 import { createAppContainer } from './container.ts';
 import { buildContext, type GraphQLContext } from './context.ts';
 import { env } from './env.ts';
-import { AuthResolver } from './resolvers/auth.resolver.ts';
-import { CategoryResolver } from './resolvers/category.resolver.ts';
-import { HealthResolver } from './resolvers/health.resolver.ts';
+import { buildAppSchema } from './schema.ts';
 
 const isTest = process.env.NODE_ENV === 'test';
 
@@ -19,12 +15,9 @@ export async function initServer() {
 	await dbClient.connect();
 	const app = express();
 	const server = new ApolloServer<GraphQLContext>({
-		schema: await buildSchema({
-			resolvers: [HealthResolver, AuthResolver, CategoryResolver],
-			validate: false,
+		schema: await buildAppSchema({
 			emitSchemaFile: isTest ? false : './schema.graphql', // Avoid rewriting the schema file during test runs
 			container,
-			authChecker,
 		}),
 	});
 	await server.start();
