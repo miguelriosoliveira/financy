@@ -1,28 +1,15 @@
 import { CombinedGraphQLErrors, gql } from '@apollo/client';
-import { useMutation, useQuery } from '@apollo/client/react';
+import { useMutation } from '@apollo/client/react';
 import { ERROR_CODES, type UpdateCategoryInputType } from '@financy/shared';
 import { ArrowUpDownIcon, PlusIcon, TagIcon, UtensilsIcon } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { Button } from '@/components/button';
-import type { TagColor } from '@/components/tag';
+import { type CategoryRow, GET_CATEGORIES, useCategories } from '@/hooks/use-categories';
 import { CategoryCard } from './components/category-card';
 import { CategoryFormDialog } from './components/category-form-dialog';
-import type { CategoryType } from './components/category-icon';
 import { DeleteCategoryDialog } from './components/delete-category-dialog';
 import { HeaderCard } from './components/header-card';
-
-const GET_CATEGORIES = gql`
-	query GetCategories {
-		getCategories {
-			id
-			name
-			description
-			icon
-			color
-		}
-	}
-`;
 
 const CREATE_CATEGORY = gql`
 	mutation CreateCategory($data: CreateCategoryInput!) {
@@ -56,18 +43,6 @@ const DELETE_CATEGORY = gql`
 	}
 `;
 
-type CategoryRow = {
-	id: string;
-	name: string;
-	description: string | null;
-	icon: CategoryType;
-	color: TagColor;
-};
-
-type GetCategoriesResult = {
-	getCategories: CategoryRow[];
-};
-
 const CATEGORY_RESPONSE_FIELD_MESSAGES: Record<string, string> = {
 	[ERROR_CODES.CATEGORY_ALREADY_EXISTS]: 'Já existe uma categoria com esse título',
 	[ERROR_CODES.CATEGORY_NOT_FOUND]: 'Categoria não encontrada',
@@ -88,12 +63,10 @@ export function CategoriesPage() {
 	const [deletingTarget, setDeletingTarget] = useState<CategoryRow | null>(null);
 	const [createServerError, setCreateServerError] = useState<string>();
 	const [editServerError, setEditServerError] = useState<string>();
-	const { data, loading: loadingCategories } = useQuery<GetCategoriesResult>(GET_CATEGORIES);
+	const { categories, loading: loadingCategories } = useCategories();
 	const [createCategory, { loading: creatingCategory }] = useMutation(CREATE_CATEGORY);
 	const [editCategory, { loading: editingCategory }] = useMutation(EDIT_CATEGORY);
 	const [deleteCategory, { loading: deletingCategory }] = useMutation(DELETE_CATEGORY);
-
-	const categories = data?.getCategories ?? [];
 
 	function handleCreateCategory(data: UpdateCategoryInputType) {
 		setCreateServerError(undefined);

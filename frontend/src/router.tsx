@@ -4,7 +4,7 @@ import { setNavigate } from './lib/navigation.ts';
 import { AuthenticatedLayout } from './pages/authenticated/authenticated.layout';
 import { CategoriesPage } from './pages/authenticated/categories/categories.page';
 import { HomePage } from './pages/authenticated/home.page';
-import { TransactionsPage } from './pages/authenticated/transactions.page';
+import { TransactionsPage } from './pages/authenticated/transactions/transactions.page';
 import { LoginPage } from './pages/non-authenticated/login.page';
 import { NonAuthenticatedLayout } from './pages/non-authenticated/non-authenticated.layout';
 import { RegisterPage } from './pages/non-authenticated/register.page';
