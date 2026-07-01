@@ -36,6 +36,7 @@ model Transaction {
   amount      Float
   description String?
   date        DateTime @default(now())
+  type        String   @default("EXPENSE")
   categoryId  String
   category    Category @relation(fields: [categoryId], references: [id])
   userId      String

@@ -1,6 +1,8 @@
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { env } from '../env.ts';
 import type { CategoryModel } from '../models/category.model.ts';
+import type { TransactionModel } from '../models/transaction.model.ts';
+import type { TransactionType } from '../models/transaction-type.ts';
 import type { UserModel } from '../models/user.model.ts';
 import type {
 	CategoryCreateProps,
@@ -8,10 +10,16 @@ import type {
 	DbCategoryClient,
 } from './db-category-client.interface.ts';
 import type { DbClient } from './db-client.interface.ts';
+import type {
+	DbTransactionClient,
+	TransactionCreateProps,
+} from './db-transaction-client.interface.ts';
 import type { DbUserClient, UserCreateProps } from './db-user-client.interface.ts';
 import { PrismaClient } from './prisma/generated/client.ts';
 
-export class PrismaDbClient implements DbClient, DbUserClient, DbCategoryClient {
+export class PrismaDbClient
+	implements DbClient, DbUserClient, DbCategoryClient, DbTransactionClient
+{
 	client: PrismaClient;
 
 	constructor() {
@@ -55,5 +63,15 @@ export class PrismaDbClient implements DbClient, DbUserClient, DbCategoryClient 
 			this.client.category.update({ where: { id }, data: props }),
 
 		delete: (id: string): Promise<CategoryModel> => this.client.category.delete({ where: { id } }),
+	};
+
+	transaction = {
+		create: async (props: TransactionCreateProps): Promise<TransactionModel> => {
+			const transaction = await this.client.transaction.create({ data: props });
+			return {
+				...transaction,
+				type: transaction.type as TransactionType,
+			};
+		},
 	};
 }

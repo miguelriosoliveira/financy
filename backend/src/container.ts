@@ -1,13 +1,16 @@
 import { PrismaDbClient } from './db/prisma-db-client.ts';
 import { DbCategoryRepository } from './repositories/category.repository.ts';
+import { DbTransactionRepository } from './repositories/transaction.repository.ts';
 import { DbUserRepository } from './repositories/user.repository.ts';
 import { AuthResolver } from './resolvers/auth.resolver.ts';
 import { CategoryResolver } from './resolvers/category.resolver.ts';
 import { HealthResolver } from './resolvers/health.resolver.ts';
+import { TransactionResolver } from './resolvers/transaction.resolver.ts';
 import { AuthService } from './services/auth.service.ts';
 import { CategoryService } from './services/category.service.ts';
 import { HashService } from './services/hash.service.ts';
 import { JwtService } from './services/jwt.service.ts';
+import { TransactionService } from './services/transaction.service.ts';
 
 /**
  * type-graphql instantiates resolvers through a container. Since the resolvers
@@ -28,15 +31,18 @@ export function createAppContainer(): AppContainer {
 	const dbClient = new PrismaDbClient();
 	const userRepository = new DbUserRepository(dbClient);
 	const categoryRepository = new DbCategoryRepository(dbClient);
+	const transactionRepository = new DbTransactionRepository(dbClient);
 	const hashService = new HashService();
 	const jwtService = new JwtService();
 	const authService = new AuthService(userRepository, hashService, jwtService);
 	const categoryService = new CategoryService(categoryRepository);
+	const transactionService = new TransactionService(transactionRepository, categoryRepository);
 
 	const instances = new Map<unknown, unknown>([
 		[AuthResolver, new AuthResolver(authService)],
 		[HealthResolver, new HealthResolver()],
 		[CategoryResolver, new CategoryResolver(categoryService)],
+		[TransactionResolver, new TransactionResolver(transactionService)],
 	]);
 
 	const container: ResolverContainer = {
