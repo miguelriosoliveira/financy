@@ -18,6 +18,12 @@ Define schemas in the shared package and apply them via the validation middlewar
 
 The generated GraphQL SDL (`schema.graphql`) is emitted from the resolver metadata. Regenerate it with the dedicated schema script after changing resolvers or GraphQL types; treat the file as generated (don't hand-edit).
 
+## Pagination
+
+Paginated list queries use offset-based pagination (`page` / `pageSize` args, capped page size) returning a page object with `items`, `totalCount`, `page`, and `pageSize`. This supports numbered page navigation with direct jumps in the UI, which cursor-based pagination cannot express.
+
+Always order by a deterministic sort ending in a unique tiebreaker (for transactions: `date desc`, `category name asc`, `id desc`) and always scope by `userId`.
+
 ## Imports
 
 Follow the established module import convention.

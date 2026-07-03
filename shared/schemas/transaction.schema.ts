@@ -8,3 +8,9 @@ export const createTransactionSchema = z.object({
 	categoryId: z.string().trim().min(1, 'Category is required'),
 });
 export type CreateTransactionInputType = z.infer<typeof createTransactionSchema>;
+
+export const listTransactionsSchema = z.object({
+	page: z.number().int().min(1).default(1),
+	pageSize: z.number().int().min(1).max(100).default(10),
+});
+export type ListTransactionsInputType = z.infer<typeof listTransactionsSchema>;

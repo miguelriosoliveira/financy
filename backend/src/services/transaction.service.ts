@@ -1,7 +1,8 @@
 import { ERROR_CODES } from '@financy/shared';
 import { GraphQLError } from 'graphql';
+import type { TransactionWithCategory } from '../db/db-transaction-client.interface.ts';
 import type { CreateTransactionInput } from '../dtos/input/transaction.input.ts';
-import type { TransactionModel } from '../models/transaction.model.ts';
+import type { TransactionPage } from '../models/transaction-page.model.ts';
 import type { CategoryRepository } from '../repositories/category.repository.ts';
 import type { TransactionRepository } from '../repositories/transaction.repository.ts';
 
@@ -14,7 +15,7 @@ export class TransactionService {
 	async create(
 		userId: string,
 		{ amount, type, description, date, categoryId }: CreateTransactionInput,
-	): Promise<TransactionModel> {
+	): Promise<TransactionWithCategory> {
 		const category = await this.categoryRepository.findById(categoryId);
 		if (!category || category.userId !== userId) {
 			throw new GraphQLError('Category not found', {
@@ -30,5 +31,18 @@ export class TransactionService {
 			categoryId,
 			userId,
 		});
+	}
+
+	async findPage(
+		userId: string,
+		{ page, pageSize }: { page: number; pageSize: number },
+	): Promise<TransactionPage> {
+		const skip = (page - 1) * pageSize;
+		const [items, totalCount] = await Promise.all([
+			this.transactionRepository.findMany(userId, { skip, take: pageSize }),
+			this.transactionRepository.count(userId),
+		]);
+
+		return { items, totalCount, page, pageSize };
 	}
 }

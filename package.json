@@ -6,6 +6,7 @@
 		"dev": "pnpm --parallel --filter backend --filter frontend dev",
 		"build": "pnpm --parallel --filter backend --filter frontend build",
 		"test": "pnpm --parallel --filter backend --filter frontend test",
+		"typecheck": "pnpm --parallel --filter backend --filter frontend typecheck",
 		"lint": "biome check --write .",
 		"prepare": "husky"
 	},

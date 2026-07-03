@@ -1,9 +1,9 @@
 import { ERROR_CODES } from '@financy/shared';
 import { GraphQLError } from 'graphql';
 import { beforeEach, describe, expect, it, type Mocked } from 'vitest';
+import type { TransactionWithCategory } from '../db/db-transaction-client.interface.ts';
 import type { CreateTransactionInput } from '../dtos/input/transaction.input.ts';
 import type { CategoryModel } from '../models/category.model.ts';
-import type { TransactionModel } from '../models/transaction.model.ts';
 import { TransactionType } from '../models/transaction-type.ts';
 import type { CategoryRepository } from '../repositories/category.repository.ts';
 import type { TransactionRepository } from '../repositories/transaction.repository.ts';
@@ -48,7 +48,8 @@ describe('TransactionService', () => {
 				id: 'transaction-1',
 				userId: USER_ID,
 				...input,
-			} satisfies TransactionModel;
+				category,
+			} satisfies TransactionWithCategory;
 			mockCategoryRepository.findById.mockResolvedValueOnce(category);
 			mockTransactionRepository.create.mockResolvedValueOnce(transaction);
 
@@ -85,6 +86,72 @@ describe('TransactionService', () => {
 			expect((error as GraphQLError).message).toBe('Category not found');
 			expect((error as GraphQLError).extensions?.code).toBe(ERROR_CODES.CATEGORY_NOT_FOUND);
 			expect(mockTransactionRepository.create).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('findPage', () => {
+		const category = {
+			id: CATEGORY_ID,
+			userId: USER_ID,
+			name: 'Food',
+			description: 'Groceries and dining',
+			icon: 'utensils',
+			color: '#ff0000',
+		} satisfies CategoryModel;
+
+		it('returns an empty page when no transactions exist', async () => {
+			mockTransactionRepository.findMany.mockResolvedValueOnce([]);
+			mockTransactionRepository.count.mockResolvedValueOnce(0);
+
+			const result = await transactionService.findPage(USER_ID, { page: 1, pageSize: 10 });
+
+			expect(mockTransactionRepository.findMany).toHaveBeenCalledWith(USER_ID, {
+				skip: 0,
+				take: 10,
+			});
+			expect(mockTransactionRepository.count).toHaveBeenCalledWith(USER_ID);
+			expect(result).toEqual({
+				items: [],
+				totalCount: 0,
+				page: 1,
+				pageSize: 10,
+			});
+		});
+
+		it('computes skip from page and pageSize', async () => {
+			mockTransactionRepository.findMany.mockResolvedValueOnce([]);
+			mockTransactionRepository.count.mockResolvedValueOnce(25);
+
+			await transactionService.findPage(USER_ID, { page: 3, pageSize: 10 });
+
+			expect(mockTransactionRepository.findMany).toHaveBeenCalledWith(USER_ID, {
+				skip: 20,
+				take: 10,
+			});
+		});
+
+		it('maps repository rows and count into the page shape', async () => {
+			const transaction = {
+				id: 'transaction-1',
+				userId: USER_ID,
+				amount: 89.5,
+				type: TransactionType.EXPENSE,
+				description: 'Dinner at restaurant',
+				date: new Date('2025-11-30T12:00:00.000Z'),
+				categoryId: CATEGORY_ID,
+				category,
+			} satisfies TransactionWithCategory;
+			mockTransactionRepository.findMany.mockResolvedValueOnce([transaction]);
+			mockTransactionRepository.count.mockResolvedValueOnce(1);
+
+			const result = await transactionService.findPage(USER_ID, { page: 1, pageSize: 10 });
+
+			expect(result).toEqual({
+				items: [transaction],
+				totalCount: 1,
+				page: 1,
+				pageSize: 10,
+			});
 		});
 	});
 });

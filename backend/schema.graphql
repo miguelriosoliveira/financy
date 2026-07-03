@@ -54,6 +54,7 @@ type Mutation {
 
 type Query {
   getCategories: [CategoryModel!]!
+  getTransactions(page: Int! = 1, pageSize: Int! = 10): TransactionPage!
   health: String!
 }
 
@@ -69,12 +70,20 @@ type RegisterOutput {
 
 type TransactionModel {
   amount: Float!
+  category: CategoryModel!
   categoryId: ID!
   date: DateTimeISO!
   description: String
   id: ID!
   type: TransactionType!
   userId: ID!
+}
+
+type TransactionPage {
+  items: [TransactionModel!]!
+  page: Int!
+  pageSize: Int!
+  totalCount: Int!
 }
 
 enum TransactionType {

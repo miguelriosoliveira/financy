@@ -1,4 +1,5 @@
 import { Field, Float, ID, ObjectType, registerEnumType } from 'type-graphql';
+import { CategoryModel } from './category.model.ts';
 import { TransactionType } from './transaction-type.ts';
 
 registerEnumType(TransactionType, {
@@ -24,6 +25,9 @@ export class TransactionModel {
 
 	@Field(() => ID)
 	categoryId!: string;
+
+	@Field(() => CategoryModel)
+	category!: CategoryModel;
 
 	@Field(() => ID)
 	userId!: string;

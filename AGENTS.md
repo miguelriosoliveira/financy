@@ -8,7 +8,14 @@ This project uses pnpm. Never use npm or yarn. Use pnpm script shortcuts and wor
 
 ## After each development slice
 
-Run `pnpm lint` and ensure it passes.
+Run these commands and ensure they all pass:
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+```
 
 ## Test-first
 

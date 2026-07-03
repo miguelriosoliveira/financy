@@ -41,4 +41,6 @@ model Transaction {
   category    Category @relation(fields: [categoryId], references: [id])
   userId      String
   user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, date, id])
 }
