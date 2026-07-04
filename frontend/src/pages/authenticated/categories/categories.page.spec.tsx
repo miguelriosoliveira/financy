@@ -1,10 +1,10 @@
-import { gql } from '@apollo/client';
 import type { MockLink } from '@apollo/client/testing';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { GET_CATEGORIES } from '@/hooks/use-categories';
 import { renderWithProviders } from '@/tests/helpers/render';
-import { CategoriesPage } from './categories.page';
+import { CategoriesPage, CREATE_CATEGORY, DELETE_CATEGORY, EDIT_CATEGORY } from './categories.page';
 
 const mockToastSuccess = vi.fn();
 const mockToastError = vi.fn();
@@ -15,50 +15,6 @@ vi.mock('react-toastify', () => ({
 		error: (...args: unknown[]) => mockToastError(...args),
 	},
 }));
-
-const GET_CATEGORIES = gql`
-	query GetCategories {
-		getCategories {
-			id
-			name
-			description
-			icon
-			color
-		}
-	}
-`;
-
-const CREATE_CATEGORY = gql`
-	mutation CreateCategory($data: CreateCategoryInput!) {
-		createCategory(data: $data) {
-			id
-			name
-			description
-			icon
-			color
-		}
-	}
-`;
-
-const EDIT_CATEGORY = gql`
-	mutation EditCategory($id: ID!, $data: UpdateCategoryInput!) {
-		editCategory(id: $id, data: $data) {
-			id
-			name
-			description
-			icon
-			color
-		}
-	}
-`;
-
-const DELETE_CATEGORY = gql`
-	mutation DeleteCategory($id: ID!) {
-		deleteCategory(id: $id) {
-			id
-		}
-	}
-`;
 
 const VALID_CATEGORY = {
 	name: 'Alimentação',

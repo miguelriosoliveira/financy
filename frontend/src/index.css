@@ -189,6 +189,10 @@
 	html {
 		@apply font-sans;
 	}
+	th {
+		font-weight: inherit;
+		text-align: inherit;
+	}
 	button:not(:disabled),
 	[role="button"]:not(:disabled) {
 		cursor: pointer;

@@ -11,7 +11,7 @@ import { CategoryFormDialog } from './components/category-form-dialog';
 import { DeleteCategoryDialog } from './components/delete-category-dialog';
 import { HeaderCard } from './components/header-card';
 
-const CREATE_CATEGORY = gql`
+export const CREATE_CATEGORY = gql`
 	mutation CreateCategory($data: CreateCategoryInput!) {
 		createCategory(data: $data) {
 			id
@@ -23,7 +23,7 @@ const CREATE_CATEGORY = gql`
 	}
 `;
 
-const EDIT_CATEGORY = gql`
+export const EDIT_CATEGORY = gql`
 	mutation EditCategory($id: ID!, $data: UpdateCategoryInput!) {
 		editCategory(id: $id, data: $data) {
 			id
@@ -35,7 +35,7 @@ const EDIT_CATEGORY = gql`
 	}
 `;
 
-const DELETE_CATEGORY = gql`
+export const DELETE_CATEGORY = gql`
 	mutation DeleteCategory($id: ID!) {
 		deleteCategory(id: $id) {
 			id

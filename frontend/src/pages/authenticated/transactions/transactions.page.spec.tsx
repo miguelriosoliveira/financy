@@ -1,10 +1,15 @@
-import { gql } from '@apollo/client';
 import type { MockLink } from '@apollo/client/testing';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { GET_CATEGORIES } from '@/hooks/use-categories';
+import {
+	DEFAULT_TRANSACTION_PAGE_SIZE,
+	GET_TRANSACTIONS,
+	type TransactionRow,
+} from '@/hooks/use-transactions';
 import { renderWithProviders } from '@/tests/helpers/render';
-import { TransactionsPage } from './transactions.page';
+import { CREATE_TRANSACTION, TransactionsPage } from './transactions.page';
 
 const mockToastSuccess = vi.fn();
 const mockToastError = vi.fn();
@@ -49,32 +54,6 @@ vi.mock('./components/transaction-form-dialog', () => ({
 	),
 }));
 
-const GET_CATEGORIES = gql`
-	query GetCategories {
-		getCategories {
-			id
-			name
-			description
-			icon
-			color
-		}
-	}
-`;
-
-const CREATE_TRANSACTION = gql`
-	mutation CreateTransaction($data: CreateTransactionInput!) {
-		createTransaction(data: $data) {
-			id
-			amount
-			type
-			description
-			date
-			categoryId
-			userId
-		}
-	}
-`;
-
 const EXISTING_CATEGORY = {
 	id: 'category-1',
 	name: 'Alimentação',
@@ -83,14 +62,35 @@ const EXISTING_CATEGORY = {
 	color: 'blue',
 };
 
-const CATEGORY_NOT_FOUND_MESSAGE = 'Categoria não encontrada';
+const SAMPLE_TRANSACTION: TransactionRow = {
+	id: 'transaction-1',
+	amount: 89.5,
+	type: 'EXPENSE',
+	description: 'Jantar no Restaurante',
+	date: '2025-11-30T12:00:00.000Z',
+	category: {
+		id: 'category-1',
+		name: 'Alimentação',
+		icon: 'food',
+		color: 'blue',
+	},
+};
 
-function getCategoriesMock(categories: (typeof EXISTING_CATEGORY)[] = []): MockLink.MockedResponse {
-	return {
-		request: { query: GET_CATEGORIES },
-		result: { data: { getCategories: categories } },
-	};
-}
+const PAGE_TWO_TRANSACTION: TransactionRow = {
+	id: 'transaction-11',
+	amount: 120,
+	type: 'EXPENSE',
+	description: 'Transação página 2',
+	date: '2025-11-20T12:00:00.000Z',
+	category: {
+		id: 'category-1',
+		name: 'Alimentação',
+		icon: 'food',
+		color: 'blue',
+	},
+};
+
+const CATEGORY_NOT_FOUND_MESSAGE = 'Categoria não encontrada';
 
 const MUTATION_VARIABLES = {
 	data: {
@@ -102,6 +102,54 @@ const MUTATION_VARIABLES = {
 	},
 };
 
+function getCategoriesMock(categories: (typeof EXISTING_CATEGORY)[] = []): MockLink.MockedResponse {
+	return {
+		request: { query: GET_CATEGORIES },
+		result: { data: { getCategories: categories } },
+	};
+}
+
+function getTransactionsMock({
+	page = 1,
+	pageSize = DEFAULT_TRANSACTION_PAGE_SIZE,
+	items = [SAMPLE_TRANSACTION],
+	totalCount = items.length,
+}: {
+	page?: number;
+	pageSize?: number;
+	items?: TransactionRow[];
+	totalCount?: number;
+} = {}): MockLink.MockedResponse {
+	return {
+		request: {
+			query: GET_TRANSACTIONS,
+			variables: { page, pageSize },
+		},
+		result: {
+			data: {
+				getTransactions: {
+					items,
+					totalCount,
+					page,
+					pageSize,
+				},
+			},
+		},
+	};
+}
+
+function createPaginatedTransactions(pageSize: number, totalCount: number, page: number) {
+	const startIndex = (page - 1) * pageSize;
+	const remaining = totalCount - startIndex;
+	const count = Math.min(pageSize, Math.max(remaining, 0));
+
+	return Array.from({ length: count }, (_, index) => ({
+		...SAMPLE_TRANSACTION,
+		id: `transaction-${startIndex + index + 1}`,
+		description: `Transação ${startIndex + index + 1}`,
+	}));
+}
+
 function createTransactionSuccessMock(): MockLink.MockedResponse {
 	return {
 		request: {
@@ -111,7 +159,7 @@ function createTransactionSuccessMock(): MockLink.MockedResponse {
 		result: {
 			data: {
 				createTransaction: {
-					id: 'transaction-1',
+					id: 'transaction-created',
 					...MUTATION_VARIABLES.data,
 					userId: 'test-user-id',
 				},
@@ -154,7 +202,10 @@ describe('TransactionsPage', () => {
 
 	it('renders the create trigger and opens the dialog', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [getCategoriesMock([EXISTING_CATEGORY])],
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY]),
+				getTransactionsMock({ items: [], totalCount: 0 }),
+			],
 		});
 
 		expect(screen.getByRole('button', { name: 'Nova transação' })).toBeInTheDocument();
@@ -166,9 +217,111 @@ describe('TransactionsPage', () => {
 		expect(screen.getByRole('button', { name: 'Salvar' })).toBeInTheDocument();
 	});
 
-	it('creates a transaction successfully', async () => {
+	it('shows loading then empty state when there are no transactions', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [getCategoriesMock([EXISTING_CATEGORY]), createTransactionSuccessMock()],
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY]),
+				getTransactionsMock({ items: [], totalCount: 0 }),
+			],
+		});
+
+		expect(screen.getByText('Carregando transações...')).toBeInTheDocument();
+
+		await waitFor(() => {
+			expect(screen.getByText('Nenhuma transação ainda')).toBeInTheDocument();
+		});
+	});
+
+	it('renders transactions from the query with formatted values', async () => {
+		renderWithProviders(<TransactionsPage />, {
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY]),
+				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
+			],
+		});
+
+		await waitFor(() => {
+			expect(screen.getByTestId('transaction-row-transaction-1')).toBeInTheDocument();
+		});
+
+		expect(screen.getByText('Jantar no Restaurante')).toBeInTheDocument();
+		expect(screen.getByText('Alimentação')).toBeInTheDocument();
+		expect(screen.getByText('30/11/25')).toBeInTheDocument();
+		expect(screen.getByText('- R$ 89,50')).toBeInTheDocument();
+	});
+
+	it('shows the pagination summary and page buttons from totalCount', async () => {
+		renderWithProviders(<TransactionsPage />, {
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY]),
+				getTransactionsMock({
+					items: createPaginatedTransactions(DEFAULT_TRANSACTION_PAGE_SIZE, 27, 1),
+					totalCount: 27,
+				}),
+			],
+		});
+
+		await waitFor(() => {
+			expect(screen.getByTestId('transaction-pagination-summary')).toHaveTextContent(
+				'1 a 10 | 27 resultados',
+			);
+		});
+
+		expect(screen.getByRole('button', { name: 'Página 1' })).toHaveAttribute(
+			'aria-current',
+			'page',
+		);
+		expect(screen.getByRole('button', { name: 'Página 2' })).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Página 3' })).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Página anterior' })).toBeDisabled();
+		expect(screen.getByRole('button', { name: 'Próxima página' })).toBeEnabled();
+	});
+
+	it('loads the next page when a page button is clicked', async () => {
+		renderWithProviders(<TransactionsPage />, {
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY]),
+				getTransactionsMock({
+					items: createPaginatedTransactions(DEFAULT_TRANSACTION_PAGE_SIZE, 27, 1),
+					totalCount: 27,
+				}),
+				getTransactionsMock({
+					page: 2,
+					items: [PAGE_TWO_TRANSACTION],
+					totalCount: 27,
+				}),
+			],
+		});
+
+		await waitFor(() => {
+			expect(screen.getByText('Transação 1')).toBeInTheDocument();
+		});
+
+		const user = userEvent.setup();
+		await user.click(screen.getByRole('button', { name: 'Página 2' }));
+
+		await waitFor(() => {
+			expect(screen.getByText('Transação página 2')).toBeInTheDocument();
+		});
+
+		expect(screen.getByTestId('transaction-pagination-summary')).toHaveTextContent(
+			'11 a 20 | 27 resultados',
+		);
+		expect(screen.getByRole('button', { name: 'Página anterior' })).toBeEnabled();
+	});
+
+	it('creates a transaction successfully and refetches the list', async () => {
+		renderWithProviders(<TransactionsPage />, {
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY]),
+				getTransactionsMock({ items: [], totalCount: 0 }),
+				createTransactionSuccessMock(),
+				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
+			],
+		});
+
+		await waitFor(() => {
+			expect(screen.getByText('Nenhuma transação ainda')).toBeInTheDocument();
 		});
 
 		const user = userEvent.setup();
@@ -179,12 +332,24 @@ describe('TransactionsPage', () => {
 			expect(mockToastSuccess).toHaveBeenCalledWith('Transação criada com sucesso');
 		});
 
+		await waitFor(() => {
+			expect(screen.getByText('Jantar no Restaurante')).toBeInTheDocument();
+		});
+
 		expect(mockToastError).not.toHaveBeenCalled();
 	});
 
 	it('shows a field error and toast when the category is not found', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [getCategoriesMock([EXISTING_CATEGORY]), createTransactionCategoryNotFoundMock()],
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY]),
+				getTransactionsMock({ items: [], totalCount: 0 }),
+				createTransactionCategoryNotFoundMock(),
+			],
+		});
+
+		await waitFor(() => {
+			expect(screen.getByText('Nenhuma transação ainda')).toBeInTheDocument();
 		});
 
 		const user = userEvent.setup();
@@ -200,7 +365,15 @@ describe('TransactionsPage', () => {
 
 	it('shows a generic error toast when transaction creation fails unexpectedly', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [getCategoriesMock([EXISTING_CATEGORY]), createTransactionUnexpectedErrorMock()],
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY]),
+				getTransactionsMock({ items: [], totalCount: 0 }),
+				createTransactionUnexpectedErrorMock(),
+			],
+		});
+
+		await waitFor(() => {
+			expect(screen.getByText('Nenhuma transação ainda')).toBeInTheDocument();
 		});
 
 		const user = userEvent.setup();

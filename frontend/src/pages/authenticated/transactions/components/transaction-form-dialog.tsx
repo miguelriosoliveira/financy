@@ -150,7 +150,7 @@ export function TransactionFormDialog({
 										type="button"
 										variant="outline"
 										className={cn(
-											'h-auto w-full justify-start py-3.5 font-light text-base',
+											'h-auto w-full justify-start py-3 font-light text-base',
 											!date && 'text-gray-400',
 										)}
 									>

@@ -1,93 +1,30 @@
-import { ArrowDownCircleIcon, ArrowUpCircleIcon, PencilIcon, Trash2Icon } from 'lucide-react';
-import { Tag, type TagColor } from '@/components/tag';
-import {
-	CategoryIcon,
-	type CategoryType,
-} from '@/pages/authenticated/categories/components/category-icon';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { ChevronLeftIcon, ChevronRightIcon, SquarePenIcon, TrashIcon } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { Button } from '@/components/button';
+import { Tag } from '@/components/tag';
+import type { TransactionRow } from '@/hooks/use-transactions';
+import { cn } from '@/lib/utils';
+import { CategoryIcon } from '@/pages/authenticated/categories/components/category-icon';
+import { TransactionTypeDisplay } from './transaction-type-display';
 
-type TransactionRow = {
-	id: string;
-	description: string;
-	date: string;
-	categoryName: string;
-	categoryIcon: CategoryType;
-	categoryColor: TagColor;
-	type: 'INCOME' | 'EXPENSE';
-	amount: number;
+type TransactionTableProps = {
+	transactions: TransactionRow[];
+	totalCount: number;
+	page: number;
+	pageSize: number;
+	loading: boolean;
+	onPageChange: (page: number) => void;
 };
 
-const HARDCODED_TRANSACTIONS: TransactionRow[] = [
-	{
-		id: '1',
-		description: 'Jantar no Restaurante',
-		date: '30/11/25',
-		categoryName: 'Alimentação',
-		categoryIcon: 'food',
-		categoryColor: 'blue',
-		type: 'EXPENSE',
-		amount: 89.5,
-	},
-	{
-		id: '2',
-		description: 'Posto de Gasolina',
-		date: '28/11/25',
-		categoryName: 'Transporte',
-		categoryIcon: 'transport',
-		categoryColor: 'purple',
-		type: 'EXPENSE',
-		amount: 120,
-	},
-	{
-		id: '3',
-		description: 'Mercado Semanal',
-		date: '27/11/25',
-		categoryName: 'Mercado',
-		categoryIcon: 'groceries',
-		categoryColor: 'orange',
-		type: 'EXPENSE',
-		amount: 245.8,
-	},
-	{
-		id: '4',
-		description: 'Retorno de Investimento',
-		date: '26/11/25',
-		categoryName: 'Investimento',
-		categoryIcon: 'investment',
-		categoryColor: 'green',
-		type: 'INCOME',
-		amount: 340.25,
-	},
-	{
-		id: '5',
-		description: 'Aluguel',
-		date: '25/11/25',
-		categoryName: 'Utilidades',
-		categoryIcon: 'utilities',
-		categoryColor: 'yellow',
-		type: 'EXPENSE',
-		amount: 1200,
-	},
-	{
-		id: '6',
-		description: 'Salário',
-		date: '25/11/25',
-		categoryName: 'Salário',
-		categoryIcon: 'salary',
-		categoryColor: 'green',
-		type: 'INCOME',
-		amount: 2500,
-	},
-	{
-		id: '7',
-		description: 'Cinema',
-		date: '22/11/25',
-		categoryName: 'Entretenimento',
-		categoryIcon: 'entertainment',
-		categoryColor: 'pink',
-		type: 'EXPENSE',
-		amount: 45,
-	},
-];
+function handleDeleteTransaction() {
+	toast.error('Delete: Not yet implemented');
+}
+
+function handleEditTransaction() {
+	toast.error('Edit: Not yet implemented');
+}
 
 function formatCurrency(value: number, type: TransactionRow['type']) {
 	const formatted = value.toLocaleString('pt-BR', {
@@ -97,113 +34,157 @@ function formatCurrency(value: number, type: TransactionRow['type']) {
 	return type === 'INCOME' ? `+ R$ ${formatted}` : `- R$ ${formatted}`;
 }
 
-export function TransactionTable() {
+function formatTransactionDate(date: string) {
+	return format(parseISO(date), 'dd/MM/yy', { locale: ptBR });
+}
+
+function getPaginationRange(totalCount: number, page: number, pageSize: number) {
+	if (totalCount === 0) {
+		return { start: 0, end: 0 };
+	}
+
+	return {
+		start: (page - 1) * pageSize + 1,
+		end: Math.min(page * pageSize, totalCount),
+	};
+}
+
+export function TransactionTable({
+	transactions,
+	totalCount,
+	page,
+	pageSize,
+	loading,
+	onPageChange,
+}: TransactionTableProps) {
+	const totalPages = Math.max(Math.ceil(totalCount / pageSize), 1);
+	const { start, end } = getPaginationRange(totalCount, page, pageSize);
+	const isFirstPage = page <= 1;
+	const isLastPage = page >= totalPages || totalCount === 0;
+
+	if (loading) {
+		return <p className="font-light text-gray-600">Carregando transações...</p>;
+	}
+
+	if (transactions.length === 0) {
+		return <p className="font-light text-gray-600">Nenhuma transação ainda</p>;
+	}
+
 	return (
 		<div className="overflow-hidden rounded-xl border border-gray-300 bg-white">
-			<table className="w-full text-left text-sm">
-				<thead className="border-gray-300 border-b bg-gray-100 text-gray-600 uppercase">
+			<table className="w-full text-sm">
+				<thead className="border-gray-300 border-b font-normal text-gray-500 uppercase">
 					<tr>
-						<th className="px-6 py-4 font-normal">Descrição</th>
-						<th className="px-6 py-4 font-normal">Data</th>
-						<th className="px-6 py-4 font-normal">Categoria</th>
-						<th className="px-6 py-4 font-normal">Tipo</th>
-						<th className="px-6 py-4 font-normal">Valor</th>
-						<th className="px-6 py-4 font-normal">Ações</th>
+						<th className="px-6 py-4 text-left">Descrição</th>
+						<th className="px-6 py-4 text-center">Data</th>
+						<th className="px-6 py-4 text-center">Categoria</th>
+						<th className="px-6 py-4 text-center">Tipo</th>
+						<th className="px-6 py-4 text-right">Valor</th>
+						<th className="px-6 py-4 text-right">Ações</th>
 					</tr>
 				</thead>
-				<tbody>
-					{HARDCODED_TRANSACTIONS.map(transaction => (
-						<tr key={transaction.id} className="border-gray-200 border-b last:border-b-0">
-							<td className="px-6 py-4">
+				<tbody className="font-light text-gray-600">
+					{transactions.map(transaction => (
+						<tr
+							key={transaction.id}
+							className="border-gray-200 border-b last:border-b-0"
+							data-testid={`transaction-row-${transaction.id}`}
+						>
+							<td className="px-6 py-4 text-left">
 								<div className="flex items-center gap-3">
 									<CategoryIcon
-										category={transaction.categoryIcon}
-										color={transaction.categoryColor}
+										category={transaction.category.icon}
+										color={transaction.category.color}
 									/>
-									<span className="font-normal text-gray-800">{transaction.description}</span>
+									<span className="font-medium text-gray-800">{transaction.description}</span>
 								</div>
 							</td>
-							<td className="px-6 py-4 font-light text-gray-600">{transaction.date}</td>
-							<td className="px-6 py-4">
-								<Tag color={transaction.categoryColor}>{transaction.categoryName}</Tag>
+							<td className="px-6 py-4 text-center">{formatTransactionDate(transaction.date)}</td>
+							<td className="px-6 py-4 text-center">
+								<Tag color={transaction.category.color}>{transaction.category.name}</Tag>
 							</td>
-							<td className="px-6 py-4">
-								<div
-									className={`flex items-center gap-2 ${transaction.type === 'INCOME' ? 'text-green-base' : 'text-red-base'}`}
-								>
-									{transaction.type === 'INCOME' ? (
-										<ArrowUpCircleIcon className="size-4" />
-									) : (
-										<ArrowDownCircleIcon className="size-4" />
-									)}
-									<span>{transaction.type === 'INCOME' ? 'Entrada' : 'Saída'}</span>
+							<td className="px-6 py-4 text-center">
+								<div className="flex justify-center">
+									<TransactionTypeDisplay type={transaction.type} />
 								</div>
 							</td>
 							<td
-								className={`px-6 py-4 font-normal ${transaction.type === 'INCOME' ? 'text-green-base' : 'text-gray-800'}`}
+								className={cn(
+									'px-6 py-4 text-right font-semibold',
+									transaction.type === 'INCOME' ? 'text-green-base' : 'text-gray-800',
+								)}
 							>
 								{formatCurrency(transaction.amount, transaction.type)}
 							</td>
-							<td className="px-6 py-4">
-								<div className="flex items-center gap-2">
-									<button
-										type="button"
-										className="rounded-md p-2 text-red-base hover:bg-red-light"
+							<td className="px-6 py-4 text-right">
+								<div className="flex items-center justify-end gap-2">
+									<Button
+										variant="outline"
+										size="icon"
+										className="bg-white hover:bg-red-light"
 										aria-label="Excluir transação"
+										onClick={handleDeleteTransaction}
 									>
-										<Trash2Icon className="size-4" />
-									</button>
-									<button
-										type="button"
-										className="rounded-md p-2 text-gray-600 hover:bg-gray-200"
+										<TrashIcon className="text-red-base" />
+									</Button>
+									<Button
+										variant="outline"
+										size="icon"
+										className="bg-white hover:bg-gray-200"
 										aria-label="Editar transação"
+										onClick={handleEditTransaction}
 									>
-										<PencilIcon className="size-4" />
-									</button>
+										<SquarePenIcon className="text-gray-600" />
+									</Button>
 								</div>
 							</td>
 						</tr>
 					))}
 				</tbody>
 			</table>
-			<div className="flex items-center justify-between border-gray-300 border-t px-6 py-4 text-gray-600 text-sm">
-				<span className="font-light">1 a 10 | 27 resultados</span>
+			<div className="flex items-center justify-between border-gray-300 border-t px-6 py-4 font-light text-gray-600 text-sm">
+				<span data-testid="transaction-pagination-summary">
+					{start} a {end} | {totalCount} resultados
+				</span>
 				<div className="flex items-center gap-2">
-					<button
-						type="button"
-						className="rounded-md border border-gray-300 px-3 py-1.5 text-gray-600"
+					<Button
+						color="secondary"
+						size="sm"
+						className="px-2 py-1.5"
 						aria-label="Página anterior"
+						disabled={isFirstPage}
+						onClick={() => onPageChange(page - 1)}
 					>
-						{'<'}
-					</button>
-					<button
-						type="button"
-						className="rounded-md bg-brand-base px-3 py-1.5 text-white"
-						aria-label="Página 1"
-					>
-						1
-					</button>
-					<button
-						type="button"
-						className="rounded-md border border-gray-300 px-3 py-1.5 text-gray-600"
-						aria-label="Página 2"
-					>
-						2
-					</button>
-					<button
-						type="button"
-						className="rounded-md border border-gray-300 px-3 py-1.5 text-gray-600"
-						aria-label="Página 3"
-					>
-						3
-					</button>
-					<button
-						type="button"
-						className="rounded-md border border-gray-300 px-3 py-1.5 text-gray-600"
+						<ChevronLeftIcon />
+					</Button>
+					{Array.from({ length: totalPages }, (_, index) => {
+						const pageNumber = index + 1;
+						const isActive = pageNumber === page;
+
+						return (
+							<Button
+								key={pageNumber}
+								color={isActive ? 'primary' : 'secondary'}
+								size="sm"
+								className="min-w-9 px-3 py-1.5"
+								aria-label={`Página ${pageNumber}`}
+								aria-current={isActive ? 'page' : undefined}
+								onClick={() => onPageChange(pageNumber)}
+							>
+								{pageNumber}
+							</Button>
+						);
+					})}
+					<Button
+						color="secondary"
+						size="sm"
+						className="px-2 py-1.5"
 						aria-label="Próxima página"
+						disabled={isLastPage}
+						onClick={() => onPageChange(page + 1)}
 					>
-						{'>'}
-					</button>
+						<ChevronRightIcon />
+					</Button>
 				</div>
 			</div>
 		</div>
