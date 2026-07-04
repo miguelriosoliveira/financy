@@ -4,6 +4,7 @@ import { ChevronLeftIcon, ChevronRightIcon, SquarePenIcon, TrashIcon } from 'luc
 import { toast } from 'react-toastify';
 import { Button } from '@/components/button';
 import { Tag } from '@/components/tag';
+import { Button as ShadcnButton } from '@/components/ui/button';
 import type { TransactionRow } from '@/hooks/use-transactions';
 import { cn } from '@/lib/utils';
 import { CategoryIcon } from '@/pages/authenticated/categories/components/category-icon';
@@ -118,7 +119,7 @@ export function TransactionTable({
 							</td>
 							<td className="px-6 py-4 text-right">
 								<div className="flex items-center justify-end gap-2">
-									<Button
+									<ShadcnButton
 										variant="outline"
 										size="icon"
 										className="bg-white hover:bg-red-light"
@@ -126,8 +127,8 @@ export function TransactionTable({
 										onClick={handleDeleteTransaction}
 									>
 										<TrashIcon className="text-red-base" />
-									</Button>
-									<Button
+									</ShadcnButton>
+									<ShadcnButton
 										variant="outline"
 										size="icon"
 										className="bg-white hover:bg-gray-200"
@@ -135,7 +136,7 @@ export function TransactionTable({
 										onClick={handleEditTransaction}
 									>
 										<SquarePenIcon className="text-gray-600" />
-									</Button>
+									</ShadcnButton>
 								</div>
 							</td>
 						</tr>

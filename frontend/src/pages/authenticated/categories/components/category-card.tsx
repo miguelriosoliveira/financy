@@ -1,6 +1,6 @@
 import { SquarePenIcon, TrashIcon } from 'lucide-react';
-import { Button } from '@/components/button';
 import { Tag, type TagColor } from '@/components/tag';
+import { Button as ShadcnButton } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { CategoryIcon, type CategoryType } from './category-icon';
 
@@ -30,7 +30,7 @@ export function CategoryCard({
 					<CategoryIcon category={category} color={color} />
 
 					<div className="flex gap-2">
-						<Button
+						<ShadcnButton
 							variant="outline"
 							size="icon"
 							className="bg-white hover:bg-gray-200"
@@ -38,8 +38,8 @@ export function CategoryCard({
 							aria-label="Excluir categoria"
 						>
 							<TrashIcon className="text-destructive" />
-						</Button>
-						<Button
+						</ShadcnButton>
+						<ShadcnButton
 							variant="outline"
 							size="icon"
 							className="bg-white hover:bg-gray-200"
@@ -47,7 +47,7 @@ export function CategoryCard({
 							aria-label="Editar categoria"
 						>
 							<SquarePenIcon className="text-gray-700" />
-						</Button>
+						</ShadcnButton>
 					</div>
 				</div>
 			</CardHeader>

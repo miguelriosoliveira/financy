@@ -88,7 +88,7 @@ export function TransactionsPage() {
 					loading={creatingTransaction}
 					serverError={createServerError}
 					trigger={
-						<Button className="px-4 py-4.5 font-light" size="sm">
+						<Button size="sm">
 							<PlusIcon className="size-4" />
 							Nova transação
 						</Button>

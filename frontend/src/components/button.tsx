@@ -3,26 +3,31 @@ import { tv, type VariantProps } from 'tailwind-variants';
 import { Button as ShadcnButton } from '@/components/ui/button';
 
 const button = tv({
-	base: "px-4 py-6 font-normal rounded-lg text-base [&_svg:not([class*='size-'])]:size-[18px]",
+	base: 'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors disabled:pointer-events-none disabled:opacity-50',
 	variants: {
 		color: {
-			primary: 'bg-brand-base hover:bg-brand-dark text-white',
-			secondary: 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-200',
+			primary: 'bg-brand-base text-white hover:bg-brand-dark',
+			secondary: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-200',
+		},
+		size: {
+			md: "h-12 px-4 py-3 text-base [&_svg:not([class*='size-'])]:size-[18px]",
+			sm: "h-9 px-3 py-2 text-sm [&_svg:not([class*='size-'])]:size-4",
 		},
 	},
 	defaultVariants: {
 		color: 'primary',
+		size: 'md',
 	},
 });
 
-type Props = ComponentProps<typeof ShadcnButton> &
+type Props = Omit<ComponentProps<typeof ShadcnButton>, 'size' | 'variant'> &
 	VariantProps<typeof button> & {
 		children: ReactNode;
 	};
 
-export function Button({ children, color, type = 'button', ...props }: Props) {
+export function Button({ children, color, size, className, type = 'button', ...props }: Props) {
 	return (
-		<ShadcnButton className={button({ color })} type={type} {...props}>
+		<ShadcnButton className={button({ color, size, className })} type={type} {...props}>
 			{children}
 		</ShadcnButton>
 	);
