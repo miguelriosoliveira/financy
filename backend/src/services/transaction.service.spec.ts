@@ -13,6 +13,7 @@ import { TransactionService } from './transaction.service.ts';
 const USER_ID = 'user-1';
 const OTHER_USER_ID = 'user-2';
 const CATEGORY_ID = 'category-1';
+const TRANSACTION_ID = 'transaction-1';
 
 describe('TransactionService', () => {
 	let transactionService: TransactionService;
@@ -86,6 +87,112 @@ describe('TransactionService', () => {
 			expect((error as GraphQLError).message).toBe('Category not found');
 			expect((error as GraphQLError).extensions?.code).toBe(ERROR_CODES.CATEGORY_NOT_FOUND);
 			expect(mockTransactionRepository.create).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('update', () => {
+		const category = {
+			id: CATEGORY_ID,
+			userId: USER_ID,
+			name: 'Food',
+			description: 'Groceries and dining',
+			icon: 'utensils',
+			color: '#ff0000',
+		} satisfies CategoryModel;
+
+		const existing = {
+			id: TRANSACTION_ID,
+			userId: USER_ID,
+			amount: 89.5,
+			type: TransactionType.EXPENSE,
+			description: 'Dinner at restaurant',
+			date: new Date('2025-11-30T12:00:00.000Z'),
+			categoryId: CATEGORY_ID,
+			category,
+		} satisfies TransactionWithCategory;
+
+		const updateData = {
+			amount: 120,
+			type: TransactionType.INCOME,
+			description: 'Updated description',
+			date: new Date('2025-12-01T12:00:00.000Z'),
+			categoryId: CATEGORY_ID,
+		} satisfies CreateTransactionInput;
+
+		it('updates an owned transaction and returns it', async () => {
+			const updated = { ...existing, ...updateData, category } satisfies TransactionWithCategory;
+			mockTransactionRepository.findById.mockResolvedValueOnce(existing);
+			mockCategoryRepository.findById.mockResolvedValueOnce(category);
+			mockTransactionRepository.update.mockResolvedValueOnce(updated);
+
+			const result = await transactionService.update(USER_ID, TRANSACTION_ID, updateData);
+
+			expect(mockTransactionRepository.findById).toHaveBeenCalledWith(TRANSACTION_ID);
+			expect(mockCategoryRepository.findById).toHaveBeenCalledWith(CATEGORY_ID);
+			expect(mockTransactionRepository.update).toHaveBeenCalledWith(TRANSACTION_ID, updateData);
+			expect(result).toBe(updated);
+		});
+
+		it('throws TRANSACTION_NOT_FOUND when the id does not exist', async () => {
+			mockTransactionRepository.findById.mockResolvedValueOnce(null);
+
+			const error = await transactionService
+				.update(USER_ID, TRANSACTION_ID, updateData)
+				.catch(error => error);
+
+			expect(error).toBeInstanceOf(GraphQLError);
+			expect((error as GraphQLError).message).toBe('Transaction not found');
+			expect((error as GraphQLError).extensions?.code).toBe(ERROR_CODES.TRANSACTION_NOT_FOUND);
+			expect(mockCategoryRepository.findById).not.toHaveBeenCalled();
+			expect(mockTransactionRepository.update).not.toHaveBeenCalled();
+		});
+
+		it('throws TRANSACTION_NOT_FOUND when owned by another user', async () => {
+			mockTransactionRepository.findById.mockResolvedValueOnce({
+				...existing,
+				userId: OTHER_USER_ID,
+			});
+
+			const error = await transactionService
+				.update(USER_ID, TRANSACTION_ID, updateData)
+				.catch(error => error);
+
+			expect(error).toBeInstanceOf(GraphQLError);
+			expect((error as GraphQLError).message).toBe('Transaction not found');
+			expect((error as GraphQLError).extensions?.code).toBe(ERROR_CODES.TRANSACTION_NOT_FOUND);
+			expect(mockCategoryRepository.findById).not.toHaveBeenCalled();
+			expect(mockTransactionRepository.update).not.toHaveBeenCalled();
+		});
+
+		it('throws CATEGORY_NOT_FOUND when the category does not exist', async () => {
+			mockTransactionRepository.findById.mockResolvedValueOnce(existing);
+			mockCategoryRepository.findById.mockResolvedValueOnce(null);
+
+			const error = await transactionService
+				.update(USER_ID, TRANSACTION_ID, updateData)
+				.catch(error => error);
+
+			expect(error).toBeInstanceOf(GraphQLError);
+			expect((error as GraphQLError).message).toBe('Category not found');
+			expect((error as GraphQLError).extensions?.code).toBe(ERROR_CODES.CATEGORY_NOT_FOUND);
+			expect(mockTransactionRepository.update).not.toHaveBeenCalled();
+		});
+
+		it('throws CATEGORY_NOT_FOUND when the category is owned by another user', async () => {
+			mockTransactionRepository.findById.mockResolvedValueOnce(existing);
+			mockCategoryRepository.findById.mockResolvedValueOnce({
+				...category,
+				userId: OTHER_USER_ID,
+			});
+
+			const error = await transactionService
+				.update(USER_ID, TRANSACTION_ID, updateData)
+				.catch(error => error);
+
+			expect(error).toBeInstanceOf(GraphQLError);
+			expect((error as GraphQLError).message).toBe('Category not found');
+			expect((error as GraphQLError).extensions?.code).toBe(ERROR_CODES.CATEGORY_NOT_FOUND);
+			expect(mockTransactionRepository.update).not.toHaveBeenCalled();
 		});
 	});
 

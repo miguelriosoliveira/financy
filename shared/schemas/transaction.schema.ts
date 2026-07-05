@@ -14,3 +14,6 @@ export const listTransactionsSchema = z.object({
 	pageSize: z.number().int().min(1).max(100).default(10),
 });
 export type ListTransactionsInputType = z.infer<typeof listTransactionsSchema>;
+
+export const updateTransactionSchema = createTransactionSchema;
+export type UpdateTransactionInputType = z.infer<typeof updateTransactionSchema>;

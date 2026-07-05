@@ -1,7 +1,11 @@
-import { createTransactionSchema, listTransactionsSchema } from '@financy/shared';
-import { Arg, Authorized, Int, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql';
+import {
+	createTransactionSchema,
+	listTransactionsSchema,
+	updateTransactionSchema,
+} from '@financy/shared';
+import { Arg, Authorized, ID, Int, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql';
 import { UserInfo } from '../auth/user-info.decorator.ts';
-import { CreateTransactionInput } from '../dtos/input/transaction.input.ts';
+import { CreateTransactionInput, UpdateTransactionInput } from '../dtos/input/transaction.input.ts';
 import { Validate } from '../middlewares/validate.middleware.ts';
 import { TransactionModel } from '../models/transaction.model.ts';
 import { TransactionPage } from '../models/transaction-page.model.ts';
@@ -21,6 +25,16 @@ export class TransactionResolver {
 		@UserInfo() user: JwtPayload,
 	): Promise<TransactionModel> {
 		return this.transactionService.create(user.id, data);
+	}
+
+	@Mutation(() => TransactionModel)
+	@UseMiddleware(Validate(updateTransactionSchema))
+	async editTransaction(
+		@Arg('id', () => ID) id: string,
+		@Arg('data', () => UpdateTransactionInput) data: UpdateTransactionInput,
+		@UserInfo() user: JwtPayload,
+	): Promise<TransactionModel> {
+		return this.transactionService.update(user.id, id, data);
 	}
 
 	@Query(() => TransactionPage)

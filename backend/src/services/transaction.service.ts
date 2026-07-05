@@ -1,7 +1,10 @@
 import { ERROR_CODES } from '@financy/shared';
 import { GraphQLError } from 'graphql';
 import type { TransactionWithCategory } from '../db/db-transaction-client.interface.ts';
-import type { CreateTransactionInput } from '../dtos/input/transaction.input.ts';
+import type {
+	CreateTransactionInput,
+	UpdateTransactionInput,
+} from '../dtos/input/transaction.input.ts';
 import type { TransactionPage } from '../models/transaction-page.model.ts';
 import type { CategoryRepository } from '../repositories/category.repository.ts';
 import type { TransactionRepository } from '../repositories/transaction.repository.ts';
@@ -30,6 +33,34 @@ export class TransactionService {
 			date,
 			categoryId,
 			userId,
+		});
+	}
+
+	async update(
+		userId: string,
+		id: string,
+		{ amount, type, description, date, categoryId }: UpdateTransactionInput,
+	): Promise<TransactionWithCategory> {
+		const transaction = await this.transactionRepository.findById(id);
+		if (!transaction || transaction.userId !== userId) {
+			throw new GraphQLError('Transaction not found', {
+				extensions: { code: ERROR_CODES.TRANSACTION_NOT_FOUND },
+			});
+		}
+
+		const category = await this.categoryRepository.findById(categoryId);
+		if (!category || category.userId !== userId) {
+			throw new GraphQLError('Category not found', {
+				extensions: { code: ERROR_CODES.CATEGORY_NOT_FOUND },
+			});
+		}
+
+		return this.transactionRepository.update(id, {
+			amount,
+			type,
+			description,
+			date,
+			categoryId,
 		});
 	}
 

@@ -13,6 +13,7 @@ import type {
 	DbTransactionClient,
 	TransactionCreateProps,
 	TransactionFindManyProps,
+	TransactionUpdateProps,
 	TransactionWithCategory,
 } from './db-transaction-client.interface.ts';
 import type { DbUserClient, UserCreateProps } from './db-user-client.interface.ts';
@@ -78,6 +79,20 @@ export class PrismaDbClient
 			};
 		},
 
+		findById: async (id: string): Promise<TransactionWithCategory | null> => {
+			const transaction = await this.client.transaction.findUnique({
+				where: { id },
+				include: { category: true },
+			});
+			if (!transaction) {
+				return null;
+			}
+			return {
+				...transaction,
+				type: transaction.type as TransactionType,
+			};
+		},
+
 		findMany: async (
 			userId: string,
 			{ skip, take }: TransactionFindManyProps,
@@ -97,5 +112,17 @@ export class PrismaDbClient
 
 		count: (userId: string): Promise<number> =>
 			this.client.transaction.count({ where: { userId } }),
+
+		update: async (id: string, props: TransactionUpdateProps): Promise<TransactionWithCategory> => {
+			const transaction = await this.client.transaction.update({
+				where: { id },
+				data: props,
+				include: { category: true },
+			});
+			return {
+				...transaction,
+				type: transaction.type as TransactionType,
+			};
+		},
 	};
 }

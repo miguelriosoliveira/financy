@@ -33,6 +33,26 @@ const CREATE_TRANSACTION = /* GraphQL */ `
 	}
 `;
 
+const EDIT_TRANSACTION = /* GraphQL */ `
+	mutation EditTransaction($id: ID!, $data: UpdateTransactionInput!) {
+		editTransaction(id: $id, data: $data) {
+			id
+			amount
+			type
+			description
+			date
+			categoryId
+			userId
+			category {
+				id
+				name
+				icon
+				color
+			}
+		}
+	}
+`;
+
 const GET_TRANSACTIONS = /* GraphQL */ `
 	query GetTransactions($page: Int!, $pageSize: Int!) {
 		getTransactions(page: $page, pageSize: $pageSize) {
@@ -199,6 +219,211 @@ describe('Transaction (integration)', () => {
 		expect(response.body.errors).toBeDefined();
 		expect(response.body.errors[0].message).toBe('Category not found');
 		expect(response.body.errors[0].extensions?.code).toBe(ERROR_CODES.CATEGORY_NOT_FOUND);
+	});
+
+	describe('editTransaction', () => {
+		it('edits an owned transaction and persists the changes', async () => {
+			await ctx.createUser();
+			const categoryId = await createCategoryForUser();
+			const created = await createTransactionForUser(categoryId, {
+				amount: 89.5,
+				type: 'EXPENSE',
+				description: 'Dinner at restaurant',
+				date: '2025-11-30T12:00:00.000Z',
+			});
+			const updateData = {
+				amount: 120,
+				type: 'INCOME',
+				description: 'Updated description',
+				date: '2025-12-01T12:00:00.000Z',
+				categoryId,
+			};
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({ query: EDIT_TRANSACTION, variables: { id: created.id, data: updateData } });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeUndefined();
+			expect(response.body.data.editTransaction).toMatchObject({
+				...updateData,
+				id: created.id,
+				userId: 'test-user-id',
+			});
+
+			const stored = await ctx.dbClient.client.transaction.findUnique({
+				where: { id: created.id },
+			});
+			expect(stored).toMatchObject({
+				amount: updateData.amount,
+				type: updateData.type,
+				description: updateData.description,
+				categoryId,
+				userId: 'test-user-id',
+			});
+		});
+
+		it('returns TRANSACTION_NOT_FOUND when editing another user transaction', async () => {
+			await ctx.createUser();
+			await ctx.createUser({ id: 'other-user-id', email: 'other@example.com' });
+			const otherCategoryId = await createCategoryForUser(
+				{ id: 'other-user-id', email: 'other@example.com' },
+				{ name: 'Other Food', icon: 'utensils', color: '#ff0000' },
+			);
+			const created = await createTransactionForUser(
+				otherCategoryId,
+				{
+					amount: 89.5,
+					type: 'EXPENSE',
+					description: 'Other user transaction',
+					date: '2025-11-30T12:00:00.000Z',
+				},
+				{ id: 'other-user-id', email: 'other@example.com' },
+			);
+			const categoryId = await createCategoryForUser();
+			const updateData = {
+				amount: 120,
+				type: 'INCOME',
+				description: 'Updated description',
+				date: '2025-12-01T12:00:00.000Z',
+				categoryId,
+			};
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({ query: EDIT_TRANSACTION, variables: { id: created.id, data: updateData } });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeDefined();
+			expect(response.body.errors[0].message).toBe('Transaction not found');
+			expect(response.body.errors[0].extensions?.code).toBe(ERROR_CODES.TRANSACTION_NOT_FOUND);
+			expect(response.body.data).toBeNull();
+
+			const stored = await ctx.dbClient.client.transaction.findUnique({
+				where: { id: created.id },
+			});
+			expect(stored?.description).toBe('Other user transaction');
+		});
+
+		it('returns TRANSACTION_NOT_FOUND for a non-existent id', async () => {
+			await ctx.createUser();
+			const categoryId = await createCategoryForUser();
+			const updateData = {
+				amount: 120,
+				type: 'INCOME',
+				description: 'Updated description',
+				date: '2025-12-01T12:00:00.000Z',
+				categoryId,
+			};
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({
+					query: EDIT_TRANSACTION,
+					variables: { id: '00000000-0000-0000-0000-000000000000', data: updateData },
+				});
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeDefined();
+			expect(response.body.errors[0].message).toBe('Transaction not found');
+			expect(response.body.errors[0].extensions?.code).toBe(ERROR_CODES.TRANSACTION_NOT_FOUND);
+			expect(response.body.data).toBeNull();
+		});
+
+		it('returns CATEGORY_NOT_FOUND when using another user category', async () => {
+			await ctx.createUser();
+			await ctx.createUser({ id: 'other-user-id', email: 'other@example.com' });
+			const categoryId = await createCategoryForUser();
+			const otherCategoryId = await createCategoryForUser(
+				{ id: 'other-user-id', email: 'other@example.com' },
+				{ name: 'Other Food', icon: 'utensils', color: '#ff0000' },
+			);
+			const created = await createTransactionForUser(categoryId, {
+				amount: 89.5,
+				type: 'EXPENSE',
+				description: 'Dinner at restaurant',
+				date: '2025-11-30T12:00:00.000Z',
+			});
+			const updateData = {
+				amount: 120,
+				type: 'INCOME',
+				description: 'Updated description',
+				date: '2025-12-01T12:00:00.000Z',
+				categoryId: otherCategoryId,
+			};
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({ query: EDIT_TRANSACTION, variables: { id: created.id, data: updateData } });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeDefined();
+			expect(response.body.errors[0].message).toBe('Category not found');
+			expect(response.body.errors[0].extensions?.code).toBe(ERROR_CODES.CATEGORY_NOT_FOUND);
+			expect(response.body.data).toBeNull();
+		});
+
+		it('rejects editTransaction when unauthenticated', async () => {
+			await ctx.createUser();
+			const categoryId = await createCategoryForUser();
+			const created = await createTransactionForUser(categoryId, {
+				amount: 89.5,
+				type: 'EXPENSE',
+				description: 'Dinner at restaurant',
+				date: '2025-11-30T12:00:00.000Z',
+			});
+			const updateData = {
+				amount: 120,
+				type: 'INCOME',
+				description: 'Updated description',
+				date: '2025-12-01T12:00:00.000Z',
+				categoryId,
+			};
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.send({ query: EDIT_TRANSACTION, variables: { id: created.id, data: updateData } });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeDefined();
+			expect(response.body.errors[0].message).toBe('Unauthorized');
+			expect(response.body.errors[0].extensions?.code).toBe(ERROR_CODES.UNAUTHENTICATED);
+			expect(response.body.data).toBeNull();
+		});
+
+		it('rejects editing a transaction with a non-positive amount', async () => {
+			await ctx.createUser();
+			const categoryId = await createCategoryForUser();
+			const created = await createTransactionForUser(categoryId, {
+				amount: 89.5,
+				type: 'EXPENSE',
+				description: 'Dinner at restaurant',
+				date: '2025-11-30T12:00:00.000Z',
+			});
+			const updateData = {
+				amount: 0,
+				type: 'EXPENSE',
+				description: 'Invalid transaction',
+				date: '2025-11-30T12:00:00.000Z',
+				categoryId,
+			};
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({ query: EDIT_TRANSACTION, variables: { id: created.id, data: updateData } });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeDefined();
+			expect(response.body.errors[0].message).toBe('Validation failed');
+			expect(response.body.errors[0].extensions?.code).toBe('BAD_USER_INPUT');
+			expect(response.body.errors[0].extensions?.issues?.amount).toBeDefined();
+			expect(response.body.data).toBeNull();
+		});
 	});
 
 	describe('getTransactions', () => {

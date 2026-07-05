@@ -48,6 +48,7 @@ type Mutation {
   createTransaction(data: CreateTransactionInput!): TransactionModel!
   deleteCategory(id: ID!): CategoryModel!
   editCategory(data: UpdateCategoryInput!, id: ID!): CategoryModel!
+  editTransaction(data: UpdateTransactionInput!, id: ID!): TransactionModel!
   login(data: LoginInput!): LoginOutput!
   register(data: RegisterInput!): RegisterOutput!
 }
@@ -96,6 +97,14 @@ input UpdateCategoryInput {
   description: String
   icon: String!
   name: String!
+}
+
+input UpdateTransactionInput {
+  amount: Float!
+  categoryId: String!
+  date: DateTimeISO!
+  description: String
+  type: TransactionType!
 }
 
 type UserModel {

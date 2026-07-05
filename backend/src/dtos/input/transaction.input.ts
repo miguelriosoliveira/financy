@@ -18,3 +18,21 @@ export class CreateTransactionInput {
 	@Field(() => String)
 	categoryId!: string;
 }
+
+@InputType()
+export class UpdateTransactionInput {
+	@Field(() => Float)
+	amount!: number;
+
+	@Field(() => TransactionType)
+	type!: TransactionType;
+
+	@Field(() => String, { nullable: true })
+	description?: string;
+
+	@Field(() => Date)
+	date!: Date;
+
+	@Field(() => String)
+	categoryId!: string;
+}
