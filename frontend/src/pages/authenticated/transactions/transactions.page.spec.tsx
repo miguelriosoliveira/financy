@@ -1,5 +1,5 @@
 import type { MockLink } from '@apollo/client/testing';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GET_CATEGORIES } from '@/hooks/use-categories';
@@ -9,7 +9,12 @@ import {
 	type TransactionRow,
 } from '@/hooks/use-transactions';
 import { renderWithProviders } from '@/tests/helpers/render';
-import { CREATE_TRANSACTION, EDIT_TRANSACTION, TransactionsPage } from './transactions.page';
+import {
+	CREATE_TRANSACTION,
+	DELETE_TRANSACTION,
+	EDIT_TRANSACTION,
+	TransactionsPage,
+} from './transactions.page';
 
 const mockToastSuccess = vi.fn();
 const mockToastError = vi.fn();
@@ -272,6 +277,46 @@ function editTransactionUnexpectedErrorMock(): MockLink.MockedResponse {
 		},
 		error: new Error('Network error'),
 	};
+}
+
+function deleteTransactionSuccessMock(id = SAMPLE_TRANSACTION.id): MockLink.MockedResponse {
+	return {
+		request: {
+			query: DELETE_TRANSACTION,
+			variables: { id },
+		},
+		result: {
+			data: {
+				deleteTransaction: { id },
+			},
+		},
+	};
+}
+
+function deleteTransactionUnexpectedErrorMock(id = SAMPLE_TRANSACTION.id): MockLink.MockedResponse {
+	return {
+		request: {
+			query: DELETE_TRANSACTION,
+			variables: { id },
+		},
+		error: new Error('Network error'),
+	};
+}
+
+async function openDeleteTransactionDialog() {
+	const user = userEvent.setup();
+
+	await waitFor(() => {
+		expect(screen.getByTestId('transaction-row-transaction-1')).toBeInTheDocument();
+	});
+
+	await user.click(screen.getByRole('button', { name: 'Excluir transação' }));
+
+	await waitFor(() => {
+		expect(screen.getByRole('dialog', { name: 'Excluir transação' })).toBeInTheDocument();
+	});
+
+	return user;
 }
 
 describe('TransactionsPage', () => {
@@ -568,5 +613,158 @@ describe('TransactionsPage', () => {
 		});
 
 		expect(mockToastSuccess).not.toHaveBeenCalled();
+	});
+
+	it('opens the delete confirmation dialog when clicking the trash button', async () => {
+		renderWithProviders(<TransactionsPage />, {
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY]),
+				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
+			],
+		});
+
+		await openDeleteTransactionDialog();
+
+		const dialog = screen.getByRole('dialog', { name: 'Excluir transação' });
+		expect(dialog).toHaveTextContent('Jantar no Restaurante');
+		expect(screen.getByRole('button', { name: 'Excluir' })).toBeInTheDocument();
+	});
+
+	it('closes the delete dialog without calling the mutation when cancelled', async () => {
+		renderWithProviders(<TransactionsPage />, {
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY]),
+				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
+			],
+		});
+
+		const user = await openDeleteTransactionDialog();
+		await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+		await waitFor(() => {
+			expect(screen.queryByRole('dialog', { name: 'Excluir transação' })).not.toBeInTheDocument();
+		});
+
+		expect(mockToastSuccess).not.toHaveBeenCalled();
+		expect(screen.getByText('Jantar no Restaurante')).toBeInTheDocument();
+	});
+
+	it('deletes a transaction successfully and removes it from the list', async () => {
+		renderWithProviders(<TransactionsPage />, {
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY]),
+				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
+				deleteTransactionSuccessMock(),
+				getTransactionsMock({ items: [], totalCount: 0 }),
+			],
+		});
+
+		const user = await openDeleteTransactionDialog();
+		const dialog = screen.getByRole('dialog', { name: 'Excluir transação' });
+		await user.click(within(dialog).getByRole('button', { name: 'Excluir' }));
+
+		await waitFor(() => {
+			expect(mockToastSuccess).toHaveBeenCalledWith('Transação excluída com sucesso');
+		});
+
+		await waitFor(() => {
+			expect(screen.getByText('Nenhuma transação ainda')).toBeInTheDocument();
+		});
+
+		expect(mockToastError).not.toHaveBeenCalled();
+	});
+
+	it('redirects to the previous page when deleting the last item on the current page', async () => {
+		const pageTwoOnlyTransaction: TransactionRow = {
+			id: 'transaction-11',
+			amount: 50,
+			type: 'EXPENSE',
+			description: 'Última transação da página',
+			date: '2025-11-20T12:00:00.000Z',
+			category: SAMPLE_TRANSACTION.category,
+		};
+
+		renderWithProviders(<TransactionsPage />, {
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY]),
+				getTransactionsMock({
+					items: createPaginatedTransactions(DEFAULT_TRANSACTION_PAGE_SIZE, 11, 1),
+					totalCount: 11,
+				}),
+				getTransactionsMock({
+					page: 2,
+					items: [pageTwoOnlyTransaction],
+					totalCount: 11,
+				}),
+				deleteTransactionSuccessMock(pageTwoOnlyTransaction.id),
+				getTransactionsMock({
+					page: 2,
+					items: [],
+					totalCount: 10,
+				}),
+				getTransactionsMock({
+					items: createPaginatedTransactions(DEFAULT_TRANSACTION_PAGE_SIZE, 10, 1),
+					totalCount: 10,
+				}),
+			],
+		});
+
+		await waitFor(() => {
+			expect(screen.getByText('Transação 1')).toBeInTheDocument();
+		});
+
+		const user = userEvent.setup();
+		await user.click(screen.getByRole('button', { name: 'Página 2' }));
+
+		await waitFor(() => {
+			expect(screen.getByText('Última transação da página')).toBeInTheDocument();
+		});
+
+		await user.click(screen.getByRole('button', { name: 'Excluir transação' }));
+
+		await waitFor(() => {
+			expect(screen.getByRole('dialog', { name: 'Excluir transação' })).toBeInTheDocument();
+		});
+
+		const dialog = screen.getByRole('dialog', { name: 'Excluir transação' });
+		await user.click(within(dialog).getByRole('button', { name: 'Excluir' }));
+
+		await waitFor(() => {
+			expect(mockToastSuccess).toHaveBeenCalledWith('Transação excluída com sucesso');
+		});
+
+		await waitFor(() => {
+			expect(screen.getByText('Transação 1')).toBeInTheDocument();
+		});
+
+		expect(screen.queryByText('Nenhuma transação ainda')).not.toBeInTheDocument();
+		expect(screen.getByTestId('transaction-pagination-summary')).toHaveTextContent(
+			'1 a 10 | 10 resultados',
+		);
+		expect(screen.getByRole('button', { name: 'Página 1' })).toHaveAttribute(
+			'aria-current',
+			'page',
+		);
+	});
+
+	it('shows a generic error toast when transaction delete fails unexpectedly', async () => {
+		renderWithProviders(<TransactionsPage />, {
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY]),
+				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
+				deleteTransactionUnexpectedErrorMock(),
+			],
+		});
+
+		const user = await openDeleteTransactionDialog();
+		const dialog = screen.getByRole('dialog', { name: 'Excluir transação' });
+		await user.click(within(dialog).getByRole('button', { name: 'Excluir' }));
+
+		await waitFor(() => {
+			expect(mockToastError).toHaveBeenCalledWith('Erro ao excluir transação');
+		});
+
+		expect(mockToastSuccess).not.toHaveBeenCalled();
+		expect(screen.getByText('Jantar no Restaurante')).toBeInTheDocument();
 	});
 });

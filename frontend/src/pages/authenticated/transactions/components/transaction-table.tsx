@@ -1,7 +1,6 @@
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ChevronLeftIcon, ChevronRightIcon, SquarePenIcon, TrashIcon } from 'lucide-react';
-import { toast } from 'react-toastify';
 import { Button } from '@/components/button';
 import { Tag } from '@/components/tag';
 import { Button as ShadcnButton } from '@/components/ui/button';
@@ -18,11 +17,8 @@ type TransactionTableProps = {
 	loading: boolean;
 	onPageChange: (page: number) => void;
 	onEdit: (transaction: TransactionRow) => void;
+	onDelete: (transaction: TransactionRow) => void;
 };
-
-function handleDeleteTransaction() {
-	toast.error('Delete: Not yet implemented');
-}
 
 function formatCurrency(value: number, type: TransactionRow['type']) {
 	const formatted = value.toLocaleString('pt-BR', {
@@ -55,6 +51,7 @@ export function TransactionTable({
 	loading,
 	onPageChange,
 	onEdit,
+	onDelete,
 }: TransactionTableProps) {
 	const totalPages = Math.max(Math.ceil(totalCount / pageSize), 1);
 	const { start, end } = getPaginationRange(totalCount, page, pageSize);
@@ -122,7 +119,7 @@ export function TransactionTable({
 										size="icon"
 										className="bg-white hover:bg-red-light"
 										aria-label="Excluir transação"
-										onClick={handleDeleteTransaction}
+										onClick={() => onDelete(transaction)}
 									>
 										<TrashIcon className="text-red-base" />
 									</ShadcnButton>
