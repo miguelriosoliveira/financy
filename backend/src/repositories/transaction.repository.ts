@@ -12,6 +12,7 @@ export interface TransactionRepository {
 	findMany(userId: string, props: TransactionFindManyProps): Promise<TransactionWithCategory[]>;
 	count(userId: string): Promise<number>;
 	update(id: string, props: TransactionUpdateProps): Promise<TransactionWithCategory>;
+	delete(id: string): Promise<TransactionWithCategory>;
 }
 
 export class DbTransactionRepository implements TransactionRepository {
@@ -38,5 +39,9 @@ export class DbTransactionRepository implements TransactionRepository {
 
 	async update(id: string, props: TransactionUpdateProps): Promise<TransactionWithCategory> {
 		return this.dbTransactionClient.transaction.update(id, props);
+	}
+
+	async delete(id: string): Promise<TransactionWithCategory> {
+		return this.dbTransactionClient.transaction.delete(id);
 	}
 }

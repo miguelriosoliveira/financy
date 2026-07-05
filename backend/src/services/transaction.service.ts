@@ -64,6 +64,17 @@ export class TransactionService {
 		});
 	}
 
+	async delete(userId: string, id: string): Promise<TransactionWithCategory> {
+		const transaction = await this.transactionRepository.findById(id);
+		if (!transaction || transaction.userId !== userId) {
+			throw new GraphQLError('Transaction not found', {
+				extensions: { code: ERROR_CODES.TRANSACTION_NOT_FOUND },
+			});
+		}
+
+		return this.transactionRepository.delete(id);
+	}
+
 	async findPage(
 		userId: string,
 		{ page, pageSize }: { page: number; pageSize: number },

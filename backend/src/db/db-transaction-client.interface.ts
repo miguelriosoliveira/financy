@@ -27,5 +27,6 @@ export interface DbTransactionClient {
 		findMany(userId: string, props: TransactionFindManyProps): Promise<TransactionWithCategory[]>;
 		count(userId: string): Promise<number>;
 		update(id: string, props: TransactionUpdateProps): Promise<TransactionWithCategory>;
+		delete(id: string): Promise<TransactionWithCategory>;
 	};
 }

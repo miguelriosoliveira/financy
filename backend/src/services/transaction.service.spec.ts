@@ -196,6 +196,64 @@ describe('TransactionService', () => {
 		});
 	});
 
+	describe('delete', () => {
+		const category = {
+			id: CATEGORY_ID,
+			userId: USER_ID,
+			name: 'Food',
+			description: 'Groceries and dining',
+			icon: 'utensils',
+			color: '#ff0000',
+		} satisfies CategoryModel;
+
+		const existing = {
+			id: TRANSACTION_ID,
+			userId: USER_ID,
+			amount: 89.5,
+			type: TransactionType.EXPENSE,
+			description: 'Dinner at restaurant',
+			date: new Date('2025-11-30T12:00:00.000Z'),
+			categoryId: CATEGORY_ID,
+			category,
+		} satisfies TransactionWithCategory;
+
+		it('deletes an owned transaction and returns it', async () => {
+			mockTransactionRepository.findById.mockResolvedValueOnce(existing);
+			mockTransactionRepository.delete.mockResolvedValueOnce(existing);
+
+			const result = await transactionService.delete(USER_ID, TRANSACTION_ID);
+
+			expect(mockTransactionRepository.findById).toHaveBeenCalledWith(TRANSACTION_ID);
+			expect(mockTransactionRepository.delete).toHaveBeenCalledWith(TRANSACTION_ID);
+			expect(result).toBe(existing);
+		});
+
+		it('throws TRANSACTION_NOT_FOUND when the id does not exist', async () => {
+			mockTransactionRepository.findById.mockResolvedValueOnce(null);
+
+			const error = await transactionService.delete(USER_ID, TRANSACTION_ID).catch(error => error);
+
+			expect(error).toBeInstanceOf(GraphQLError);
+			expect((error as GraphQLError).message).toBe('Transaction not found');
+			expect((error as GraphQLError).extensions?.code).toBe(ERROR_CODES.TRANSACTION_NOT_FOUND);
+			expect(mockTransactionRepository.delete).not.toHaveBeenCalled();
+		});
+
+		it('throws TRANSACTION_NOT_FOUND when owned by another user', async () => {
+			mockTransactionRepository.findById.mockResolvedValueOnce({
+				...existing,
+				userId: OTHER_USER_ID,
+			});
+
+			const error = await transactionService.delete(USER_ID, TRANSACTION_ID).catch(error => error);
+
+			expect(error).toBeInstanceOf(GraphQLError);
+			expect((error as GraphQLError).message).toBe('Transaction not found');
+			expect((error as GraphQLError).extensions?.code).toBe(ERROR_CODES.TRANSACTION_NOT_FOUND);
+			expect(mockTransactionRepository.delete).not.toHaveBeenCalled();
+		});
+	});
+
 	describe('findPage', () => {
 		const category = {
 			id: CATEGORY_ID,

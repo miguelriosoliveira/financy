@@ -37,6 +37,14 @@ export class TransactionResolver {
 		return this.transactionService.update(user.id, id, data);
 	}
 
+	@Mutation(() => TransactionModel)
+	async deleteTransaction(
+		@Arg('id', () => ID) id: string,
+		@UserInfo() user: JwtPayload,
+	): Promise<TransactionModel> {
+		return this.transactionService.delete(user.id, id);
+	}
+
 	@Query(() => TransactionPage)
 	@UseMiddleware(Validate(listTransactionsSchema, 'flat'))
 	async getTransactions(

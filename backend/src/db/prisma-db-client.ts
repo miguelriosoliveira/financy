@@ -124,5 +124,16 @@ export class PrismaDbClient
 				type: transaction.type as TransactionType,
 			};
 		},
+
+		delete: async (id: string): Promise<TransactionWithCategory> => {
+			const transaction = await this.client.transaction.delete({
+				where: { id },
+				include: { category: true },
+			});
+			return {
+				...transaction,
+				type: transaction.type as TransactionType,
+			};
+		},
 	};
 }

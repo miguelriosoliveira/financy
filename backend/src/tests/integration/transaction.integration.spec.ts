@@ -53,6 +53,26 @@ const EDIT_TRANSACTION = /* GraphQL */ `
 	}
 `;
 
+const DELETE_TRANSACTION = /* GraphQL */ `
+	mutation DeleteTransaction($id: ID!) {
+		deleteTransaction(id: $id) {
+			id
+			amount
+			type
+			description
+			date
+			categoryId
+			userId
+			category {
+				id
+				name
+				icon
+				color
+			}
+		}
+	}
+`;
+
 const GET_TRANSACTIONS = /* GraphQL */ `
 	query GetTransactions($page: Int!, $pageSize: Int!) {
 		getTransactions(page: $page, pageSize: $pageSize) {
@@ -423,6 +443,125 @@ describe('Transaction (integration)', () => {
 			expect(response.body.errors[0].extensions?.code).toBe('BAD_USER_INPUT');
 			expect(response.body.errors[0].extensions?.issues?.amount).toBeDefined();
 			expect(response.body.data).toBeNull();
+		});
+	});
+
+	describe('deleteTransaction', () => {
+		it('deletes an owned transaction and removes it from the database', async () => {
+			await ctx.createUser();
+			const categoryId = await createCategoryForUser();
+			const created = await createTransactionForUser(categoryId, {
+				amount: 89.5,
+				type: 'EXPENSE',
+				description: 'Dinner at restaurant',
+				date: '2025-11-30T12:00:00.000Z',
+			});
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({ query: DELETE_TRANSACTION, variables: { id: created.id } });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeUndefined();
+			expect(response.body.data.deleteTransaction).toMatchObject({
+				id: created.id,
+				amount: 89.5,
+				type: 'EXPENSE',
+				description: 'Dinner at restaurant',
+				categoryId,
+				userId: 'test-user-id',
+				category: {
+					id: categoryId,
+					name: 'Food',
+					icon: 'utensils',
+					color: '#ff0000',
+				},
+			});
+
+			const stored = await ctx.dbClient.client.transaction.findUnique({
+				where: { id: created.id },
+			});
+			expect(stored).toBeNull();
+		});
+
+		it('returns TRANSACTION_NOT_FOUND when deleting another user transaction', async () => {
+			await ctx.createUser();
+			await ctx.createUser({ id: 'other-user-id', email: 'other@example.com' });
+			const otherCategoryId = await createCategoryForUser(
+				{ id: 'other-user-id', email: 'other@example.com' },
+				{ name: 'Other Food', icon: 'utensils', color: '#ff0000' },
+			);
+			const created = await createTransactionForUser(
+				otherCategoryId,
+				{
+					amount: 89.5,
+					type: 'EXPENSE',
+					description: 'Other user transaction',
+					date: '2025-11-30T12:00:00.000Z',
+				},
+				{ id: 'other-user-id', email: 'other@example.com' },
+			);
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({ query: DELETE_TRANSACTION, variables: { id: created.id } });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeDefined();
+			expect(response.body.errors[0].message).toBe('Transaction not found');
+			expect(response.body.errors[0].extensions?.code).toBe(ERROR_CODES.TRANSACTION_NOT_FOUND);
+			expect(response.body.data).toBeNull();
+
+			const stored = await ctx.dbClient.client.transaction.findUnique({
+				where: { id: created.id },
+			});
+			expect(stored).not.toBeNull();
+		});
+
+		it('returns TRANSACTION_NOT_FOUND for a non-existent id', async () => {
+			await ctx.createUser();
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({
+					query: DELETE_TRANSACTION,
+					variables: { id: '00000000-0000-0000-0000-000000000000' },
+				});
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeDefined();
+			expect(response.body.errors[0].message).toBe('Transaction not found');
+			expect(response.body.errors[0].extensions?.code).toBe(ERROR_CODES.TRANSACTION_NOT_FOUND);
+			expect(response.body.data).toBeNull();
+		});
+
+		it('rejects deleteTransaction when unauthenticated', async () => {
+			await ctx.createUser();
+			const categoryId = await createCategoryForUser();
+			const created = await createTransactionForUser(categoryId, {
+				amount: 89.5,
+				type: 'EXPENSE',
+				description: 'Dinner at restaurant',
+				date: '2025-11-30T12:00:00.000Z',
+			});
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.send({ query: DELETE_TRANSACTION, variables: { id: created.id } });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeDefined();
+			expect(response.body.errors[0].message).toBe('Unauthorized');
+			expect(response.body.errors[0].extensions?.code).toBe(ERROR_CODES.UNAUTHENTICATED);
+			expect(response.body.data).toBeNull();
+
+			const stored = await ctx.dbClient.client.transaction.findUnique({
+				where: { id: created.id },
+			});
+			expect(stored).not.toBeNull();
 		});
 	});
 
