@@ -1,12 +1,13 @@
 import { CombinedGraphQLErrors, gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import { type CreateTransactionInputType, ERROR_CODES } from '@financy/shared';
+import { parseISO } from 'date-fns';
 import { PlusIcon } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { Button } from '@/components/button';
 import { useCategories } from '@/hooks/use-categories';
-import { GET_TRANSACTIONS, useTransactions } from '@/hooks/use-transactions';
+import { GET_TRANSACTIONS, type TransactionRow, useTransactions } from '@/hooks/use-transactions';
 import { TransactionFilters } from './components/transaction-filters';
 import { TransactionFormDialog } from './components/transaction-form-dialog';
 import { TransactionTable } from './components/transaction-table';
@@ -25,8 +26,23 @@ export const CREATE_TRANSACTION = gql`
 	}
 `;
 
+export const EDIT_TRANSACTION = gql`
+	mutation EditTransaction($id: ID!, $data: UpdateTransactionInput!) {
+		editTransaction(id: $id, data: $data) {
+			id
+			amount
+			type
+			description
+			date
+			categoryId
+			userId
+		}
+	}
+`;
+
 const TRANSACTION_RESPONSE_FIELD_MESSAGES: Record<string, string> = {
 	[ERROR_CODES.CATEGORY_NOT_FOUND]: 'Categoria não encontrada',
+	[ERROR_CODES.TRANSACTION_NOT_FOUND]: 'Transação não encontrada',
 };
 
 function getGraphQLErrorCode(error: unknown): string | undefined {
@@ -38,11 +54,17 @@ function getGraphQLErrorCode(error: unknown): string | undefined {
 
 export function TransactionsPage() {
 	const [createOpen, setCreateOpen] = useState(false);
+	const [editOpen, setEditOpen] = useState(false);
+	const [editingTarget, setEditingTarget] = useState<TransactionRow | null>(null);
 	const [createServerError, setCreateServerError] = useState<string>();
+	const [editServerError, setEditServerError] = useState<string>();
 	const [page, setPage] = useState(1);
 	const { categories } = useCategories();
 	const { transactions, totalCount, pageSize, loading } = useTransactions({ page });
 	const [createTransaction, { loading: creatingTransaction }] = useMutation(CREATE_TRANSACTION);
+	const [editTransaction, { loading: editingTransaction }] = useMutation(EDIT_TRANSACTION);
+
+	const categoryOptions = categories.map(category => ({ id: category.id, name: category.name }));
 
 	function handleCreateTransaction(data: CreateTransactionInputType) {
 		setCreateServerError(undefined);
@@ -71,6 +93,45 @@ export function TransactionsPage() {
 			});
 	}
 
+	function handleEditTransaction(transaction: TransactionRow) {
+		setEditingTarget(transaction);
+		setEditServerError(undefined);
+		setEditOpen(true);
+	}
+
+	function handleEditTransactionSubmit(data: CreateTransactionInputType) {
+		if (!editingTarget) {
+			return;
+		}
+
+		setEditServerError(undefined);
+		editTransaction({
+			variables: {
+				id: editingTarget.id,
+				data: {
+					...data,
+					date: data.date.toISOString(),
+				},
+			},
+			refetchQueries: [{ query: GET_TRANSACTIONS, variables: { page, pageSize } }],
+			awaitRefetchQueries: true,
+		})
+			.then(() => {
+				toast.success('Transação editada com sucesso');
+				setEditOpen(false);
+				setEditingTarget(null);
+			})
+			.catch((error: unknown) => {
+				const fieldMessage = TRANSACTION_RESPONSE_FIELD_MESSAGES[getGraphQLErrorCode(error) ?? ''];
+				if (fieldMessage) {
+					setEditServerError(fieldMessage);
+					toast.error(fieldMessage);
+					return;
+				}
+				toast.error('Erro ao editar transação');
+			});
+	}
+
 	return (
 		<div className="flex flex-col gap-8">
 			<div className="flex items-center justify-between">
@@ -81,9 +142,10 @@ export function TransactionsPage() {
 					</h2>
 				</div>
 				<TransactionFormDialog
+					mode="create"
 					open={createOpen}
 					onOpenChange={setCreateOpen}
-					categories={categories.map(category => ({ id: category.id, name: category.name }))}
+					categories={categoryOptions}
 					onSubmit={handleCreateTransaction}
 					loading={creatingTransaction}
 					serverError={createServerError}
@@ -104,6 +166,34 @@ export function TransactionsPage() {
 				pageSize={pageSize}
 				loading={loading}
 				onPageChange={setPage}
+				onEdit={handleEditTransaction}
+			/>
+
+			<TransactionFormDialog
+				mode="edit"
+				open={editOpen}
+				onOpenChange={open => {
+					setEditOpen(open);
+					if (!open) {
+						setEditingTarget(null);
+						setEditServerError(undefined);
+					}
+				}}
+				categories={categoryOptions}
+				initialValues={
+					editingTarget
+						? {
+								type: editingTarget.type,
+								description: editingTarget.description ?? '',
+								date: parseISO(editingTarget.date),
+								amount: String(editingTarget.amount),
+								categoryId: editingTarget.category.id,
+							}
+						: undefined
+				}
+				onSubmit={handleEditTransactionSubmit}
+				loading={editingTransaction}
+				serverError={editServerError}
 			/>
 		</div>
 	);

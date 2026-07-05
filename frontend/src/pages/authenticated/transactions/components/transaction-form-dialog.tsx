@@ -39,30 +39,53 @@ type CategoryOption = {
 	name: string;
 };
 
+export type TransactionFormValues = {
+	type: TransactionTypeValue;
+	description: string;
+	date: Date | undefined;
+	amount: string;
+	categoryId: string | undefined;
+};
+
 type Props = {
+	mode: 'create' | 'edit';
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	categories: CategoryOption[];
+	initialValues?: TransactionFormValues;
 	onSubmit: (data: CreateTransactionInputType) => void;
 	loading: boolean;
 	serverError?: string;
 	trigger?: ReactNode;
 };
 
-function getDefaultValues() {
+const DIALOG_COPY = {
+	create: {
+		title: 'Nova transação',
+		description: 'Registre sua despesa ou receita',
+	},
+	edit: {
+		title: 'Editar transação',
+		description: 'Atualize os dados da transação',
+	},
+} as const;
+
+function getDefaultValues(): TransactionFormValues {
 	return {
-		type: 'EXPENSE' as TransactionTypeValue,
+		type: 'EXPENSE',
 		description: '',
-		date: undefined as Date | undefined,
+		date: undefined,
 		amount: '',
-		categoryId: undefined as string | undefined,
+		categoryId: undefined,
 	};
 }
 
 export function TransactionFormDialog({
+	mode,
 	open,
 	onOpenChange,
 	categories,
+	initialValues,
 	onSubmit,
 	loading,
 	serverError,
@@ -83,15 +106,16 @@ export function TransactionFormDialog({
 			return;
 		}
 
-		const defaults = getDefaultValues();
-		setType(defaults.type);
-		setDescription(defaults.description);
-		setDate(defaults.date);
-		setAmount(defaults.amount);
-		setCategoryId(defaults.categoryId || undefined);
+		const values = mode === 'edit' && initialValues ? initialValues : getDefaultValues();
+		setType(values.type);
+		setDescription(values.description);
+		setDate(values.date);
+		setAmount(values.amount);
+		setCategoryId(values.categoryId || undefined);
 		setErrors({});
-	}, [open]);
+	}, [open, mode, initialValues]);
 
+	const copy = DIALOG_COPY[mode];
 	const categoryError = errors.categoryId ?? serverError;
 
 	function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
@@ -124,29 +148,29 @@ export function TransactionFormDialog({
 
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle className="text-base">Nova transação</DialogTitle>
+					<DialogTitle className="text-base">{copy.title}</DialogTitle>
 					<DialogDescription className="font-light text-gray-600">
-						Registre sua despesa ou receita
+						{copy.description}
 					</DialogDescription>
 				</DialogHeader>
 				<form noValidate onSubmit={handleSubmit} className="flex flex-col gap-4">
 					<TransactionTypeSelector value={type} onChange={setType} />
 					<FormField
 						label="Descrição"
-						id="transaction-description"
+						id={`${mode}-transaction-description`}
 						placeholder="Ex. Almoço no restaurante"
 						value={description}
 						onChange={event => setDescription(event.target.value)}
 					/>
 					<div className="grid grid-cols-2 gap-4">
 						<Field>
-							<FieldLabel htmlFor="transaction-date" className="font-normal">
+							<FieldLabel htmlFor={`${mode}-transaction-date`} className="font-normal">
 								Data
 							</FieldLabel>
 							<Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
 								<PopoverTrigger asChild>
 									<ShadcnButton
-										id="transaction-date"
+										id={`${mode}-transaction-date`}
 										type="button"
 										variant="outline"
 										className={cn(
@@ -176,7 +200,7 @@ export function TransactionFormDialog({
 						</Field>
 						<FormField
 							label="Valor"
-							id="transaction-amount"
+							id={`${mode}-transaction-amount`}
 							type="number"
 							min="0"
 							step="0.01"
@@ -188,12 +212,12 @@ export function TransactionFormDialog({
 						/>
 					</div>
 					<Field>
-						<FieldLabel htmlFor="transaction-category" className="font-normal">
+						<FieldLabel htmlFor={`${mode}-transaction-category`} className="font-normal">
 							Categoria
 						</FieldLabel>
 						<Select value={categoryId ?? ''} onValueChange={setCategoryId}>
 							<SelectTrigger
-								id="transaction-category"
+								id={`${mode}-transaction-category`}
 								className="h-auto w-full py-3.5 font-light text-base data-placeholder:text-gray-400"
 							>
 								<SelectValue placeholder="Selecione" />

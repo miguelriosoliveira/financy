@@ -9,7 +9,7 @@ import {
 	type TransactionRow,
 } from '@/hooks/use-transactions';
 import { renderWithProviders } from '@/tests/helpers/render';
-import { CREATE_TRANSACTION, TransactionsPage } from './transactions.page';
+import { CREATE_TRANSACTION, EDIT_TRANSACTION, TransactionsPage } from './transactions.page';
 
 const mockToastSuccess = vi.fn();
 const mockToastError = vi.fn();
@@ -29,29 +29,51 @@ const VALID_TRANSACTION = {
 	categoryId: 'category-1',
 };
 
+const UPDATED_TRANSACTION = {
+	amount: 120,
+	type: 'INCOME' as const,
+	description: 'Transação atualizada',
+	date: new Date('2025-12-01T12:00:00.000Z'),
+	categoryId: 'category-1',
+};
+
 vi.mock('./components/transaction-form-dialog', () => ({
 	TransactionFormDialog: ({
+		mode,
 		onSubmit,
 		open,
 		onOpenChange,
 	}: {
-		onSubmit: (data: typeof VALID_TRANSACTION) => void;
+		mode: 'create' | 'edit';
+		onSubmit: (data: typeof VALID_TRANSACTION | typeof UPDATED_TRANSACTION) => void;
 		open: boolean;
 		onOpenChange: (open: boolean) => void;
-	}) => (
-		<div>
-			<button type="button" onClick={() => onOpenChange(true)}>
-				Nova transação
-			</button>
-			{open ? (
-				<div role="dialog" aria-label="Nova transação">
-					<button type="button" onClick={() => onSubmit(VALID_TRANSACTION)}>
-						Salvar
+	}) => {
+		if (mode === 'create') {
+			return (
+				<div>
+					<button type="button" onClick={() => onOpenChange(true)}>
+						Nova transação
 					</button>
+					{open ? (
+						<div role="dialog" aria-label="Nova transação">
+							<button type="button" onClick={() => onSubmit(VALID_TRANSACTION)}>
+								Salvar
+							</button>
+						</div>
+					) : null}
 				</div>
-			) : null}
-		</div>
-	),
+			);
+		}
+
+		return open ? (
+			<div role="dialog" aria-label="Editar transação">
+				<button type="button" onClick={() => onSubmit(UPDATED_TRANSACTION)}>
+					Salvar
+				</button>
+			</div>
+		) : null;
+	},
 }));
 
 const EXISTING_CATEGORY = {
@@ -91,6 +113,7 @@ const PAGE_TWO_TRANSACTION: TransactionRow = {
 };
 
 const CATEGORY_NOT_FOUND_MESSAGE = 'Categoria não encontrada';
+const TRANSACTION_NOT_FOUND_MESSAGE = 'Transação não encontrada';
 
 const MUTATION_VARIABLES = {
 	data: {
@@ -99,6 +122,17 @@ const MUTATION_VARIABLES = {
 		description: VALID_TRANSACTION.description,
 		date: VALID_TRANSACTION.date.toISOString(),
 		categoryId: VALID_TRANSACTION.categoryId,
+	},
+};
+
+const EDIT_MUTATION_VARIABLES = {
+	id: SAMPLE_TRANSACTION.id,
+	data: {
+		amount: UPDATED_TRANSACTION.amount,
+		type: UPDATED_TRANSACTION.type,
+		description: UPDATED_TRANSACTION.description,
+		date: UPDATED_TRANSACTION.date.toISOString(),
+		categoryId: UPDATED_TRANSACTION.categoryId,
 	},
 };
 
@@ -190,6 +224,51 @@ function createTransactionUnexpectedErrorMock(): MockLink.MockedResponse {
 		request: {
 			query: CREATE_TRANSACTION,
 			variables: MUTATION_VARIABLES,
+		},
+		error: new Error('Network error'),
+	};
+}
+
+function editTransactionSuccessMock(): MockLink.MockedResponse {
+	return {
+		request: {
+			query: EDIT_TRANSACTION,
+			variables: EDIT_MUTATION_VARIABLES,
+		},
+		result: {
+			data: {
+				editTransaction: {
+					id: SAMPLE_TRANSACTION.id,
+					...EDIT_MUTATION_VARIABLES.data,
+					userId: 'test-user-id',
+				},
+			},
+		},
+	};
+}
+
+function editTransactionNotFoundMock(): MockLink.MockedResponse {
+	return {
+		request: {
+			query: EDIT_TRANSACTION,
+			variables: EDIT_MUTATION_VARIABLES,
+		},
+		result: {
+			errors: [
+				{
+					message: 'Transaction not found',
+					extensions: { code: 'TRANSACTION_NOT_FOUND' },
+				},
+			],
+		},
+	};
+}
+
+function editTransactionUnexpectedErrorMock(): MockLink.MockedResponse {
+	return {
+		request: {
+			query: EDIT_TRANSACTION,
+			variables: EDIT_MUTATION_VARIABLES,
 		},
 		error: new Error('Network error'),
 	};
@@ -382,6 +461,110 @@ describe('TransactionsPage', () => {
 
 		await waitFor(() => {
 			expect(mockToastError).toHaveBeenCalledWith('Erro ao criar transação');
+		});
+
+		expect(mockToastSuccess).not.toHaveBeenCalled();
+	});
+
+	it('opens the edit dialog when the edit button is clicked', async () => {
+		renderWithProviders(<TransactionsPage />, {
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY]),
+				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
+			],
+		});
+
+		await waitFor(() => {
+			expect(screen.getByTestId('transaction-row-transaction-1')).toBeInTheDocument();
+		});
+
+		const user = userEvent.setup();
+		await user.click(screen.getByRole('button', { name: 'Editar transação' }));
+
+		expect(screen.getByRole('dialog', { name: 'Editar transação' })).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Salvar' })).toBeInTheDocument();
+	});
+
+	it('edits a transaction successfully and refetches the list', async () => {
+		const updatedTransaction: TransactionRow = {
+			...SAMPLE_TRANSACTION,
+			amount: UPDATED_TRANSACTION.amount,
+			type: UPDATED_TRANSACTION.type,
+			description: UPDATED_TRANSACTION.description,
+			date: UPDATED_TRANSACTION.date.toISOString(),
+		};
+
+		renderWithProviders(<TransactionsPage />, {
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY]),
+				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
+				editTransactionSuccessMock(),
+				getTransactionsMock({ items: [updatedTransaction], totalCount: 1 }),
+			],
+		});
+
+		await waitFor(() => {
+			expect(screen.getByText('Jantar no Restaurante')).toBeInTheDocument();
+		});
+
+		const user = userEvent.setup();
+		await user.click(screen.getByRole('button', { name: 'Editar transação' }));
+		await user.click(screen.getByRole('button', { name: 'Salvar' }));
+
+		await waitFor(() => {
+			expect(mockToastSuccess).toHaveBeenCalledWith('Transação editada com sucesso');
+		});
+
+		await waitFor(() => {
+			expect(screen.getByText('Transação atualizada')).toBeInTheDocument();
+		});
+
+		expect(mockToastError).not.toHaveBeenCalled();
+	});
+
+	it('shows a field error and toast when the transaction is not found', async () => {
+		renderWithProviders(<TransactionsPage />, {
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY]),
+				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
+				editTransactionNotFoundMock(),
+			],
+		});
+
+		await waitFor(() => {
+			expect(screen.getByText('Jantar no Restaurante')).toBeInTheDocument();
+		});
+
+		const user = userEvent.setup();
+		await user.click(screen.getByRole('button', { name: 'Editar transação' }));
+		await user.click(screen.getByRole('button', { name: 'Salvar' }));
+
+		await waitFor(() => {
+			expect(mockToastError).toHaveBeenCalledWith(TRANSACTION_NOT_FOUND_MESSAGE);
+		});
+
+		expect(mockToastSuccess).not.toHaveBeenCalled();
+	});
+
+	it('shows a generic error toast when transaction edit fails unexpectedly', async () => {
+		renderWithProviders(<TransactionsPage />, {
+			mocks: [
+				getCategoriesMock([EXISTING_CATEGORY]),
+				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
+				editTransactionUnexpectedErrorMock(),
+			],
+		});
+
+		await waitFor(() => {
+			expect(screen.getByText('Jantar no Restaurante')).toBeInTheDocument();
+		});
+
+		const user = userEvent.setup();
+		await user.click(screen.getByRole('button', { name: 'Editar transação' }));
+		await user.click(screen.getByRole('button', { name: 'Salvar' }));
+
+		await waitFor(() => {
+			expect(mockToastError).toHaveBeenCalledWith('Erro ao editar transação');
 		});
 
 		expect(mockToastSuccess).not.toHaveBeenCalled();

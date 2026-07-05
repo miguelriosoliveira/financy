@@ -17,14 +17,11 @@ type TransactionTableProps = {
 	pageSize: number;
 	loading: boolean;
 	onPageChange: (page: number) => void;
+	onEdit: (transaction: TransactionRow) => void;
 };
 
 function handleDeleteTransaction() {
 	toast.error('Delete: Not yet implemented');
-}
-
-function handleEditTransaction() {
-	toast.error('Edit: Not yet implemented');
 }
 
 function formatCurrency(value: number, type: TransactionRow['type']) {
@@ -57,6 +54,7 @@ export function TransactionTable({
 	pageSize,
 	loading,
 	onPageChange,
+	onEdit,
 }: TransactionTableProps) {
 	const totalPages = Math.max(Math.ceil(totalCount / pageSize), 1);
 	const { start, end } = getPaginationRange(totalCount, page, pageSize);
@@ -133,7 +131,7 @@ export function TransactionTable({
 										size="icon"
 										className="bg-white hover:bg-gray-200"
 										aria-label="Editar transação"
-										onClick={handleEditTransaction}
+										onClick={() => onEdit(transaction)}
 									>
 										<SquarePenIcon className="text-gray-600" />
 									</ShadcnButton>
