@@ -40,7 +40,7 @@ input LoginInput {
 type LoginOutput {
   refreshToken: String!
   token: String!
-  user: UserModel!
+  user: UserProfileOutput!
 }
 
 type Mutation {
@@ -52,10 +52,12 @@ type Mutation {
   editTransaction(data: UpdateTransactionInput!, id: ID!): TransactionModel!
   login(data: LoginInput!): LoginOutput!
   register(data: RegisterInput!): RegisterOutput!
+  updateProfile(data: UpdateProfileInput!): UserProfileOutput!
 }
 
 type Query {
   getCategories: [CategoryModel!]!
+  getMe: UserProfileOutput!
   getTransactions(page: Int! = 1, pageSize: Int! = 10): TransactionPage!
   health: String!
 }
@@ -100,6 +102,10 @@ input UpdateCategoryInput {
   name: String!
 }
 
+input UpdateProfileInput {
+  name: String!
+}
+
 input UpdateTransactionInput {
   amount: Float!
   categoryId: String!
@@ -108,11 +114,8 @@ input UpdateTransactionInput {
   type: TransactionType!
 }
 
-type UserModel {
-  createdAt: DateTimeISO!
+type UserProfileOutput {
   email: String!
   id: ID!
   name: String!
-  password: String!
-  updatedAt: DateTimeISO!
 }

@@ -94,7 +94,11 @@ describe('AuthService', () => {
 			expect(result).toEqual({
 				token: 'mocked-jwt-token',
 				refreshToken: 'mocked-jwt-token',
-				user,
+				user: {
+					id: user.id,
+					name: user.name,
+					email: user.email,
+				},
 			});
 		});
 

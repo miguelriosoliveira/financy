@@ -16,7 +16,7 @@ import type {
 	TransactionUpdateProps,
 	TransactionWithCategory,
 } from './db-transaction-client.interface.ts';
-import type { DbUserClient, UserCreateProps } from './db-user-client.interface.ts';
+import type { DbUserClient, UserCreateProps, UserUpdateProps } from './db-user-client.interface.ts';
 import { PrismaClient } from './prisma/generated/client.ts';
 
 export class PrismaDbClient
@@ -41,11 +41,17 @@ export class PrismaDbClient
 	}
 
 	user = {
+		create: ({ name, email, password }: UserCreateProps): Promise<UserModel> =>
+			this.client.user.create({ data: { name, email, password } }),
+
+		findById: (id: string): Promise<UserModel | null> =>
+			this.client.user.findUnique({ where: { id } }),
+
 		findByEmail: (email: string): Promise<UserModel | null> =>
 			this.client.user.findUnique({ where: { email } }),
 
-		create: ({ name, email, password }: UserCreateProps): Promise<UserModel> =>
-			this.client.user.create({ data: { name, email, password } }),
+		update: (id: string, { name }: UserUpdateProps): Promise<UserModel> =>
+			this.client.user.update({ where: { id }, data: { name } }),
 	};
 
 	category = {

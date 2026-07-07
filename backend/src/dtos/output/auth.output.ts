@@ -1,5 +1,5 @@
 import { Field, ObjectType } from 'type-graphql';
-import { UserModel } from '../../models/user.model.ts';
+import { UserProfileOutput } from './profile.output.ts';
 
 @ObjectType()
 export class RegisterOutput {
@@ -15,6 +15,6 @@ export class LoginOutput {
 	@Field(() => String)
 	refreshToken!: string;
 
-	@Field(() => UserModel)
-	user!: UserModel;
+	@Field(() => UserProfileOutput)
+	user!: UserProfileOutput;
 }
