@@ -2,12 +2,26 @@ import { MockedProvider } from '@apollo/client/testing/react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { GET_ME } from '@/hooks/use-current-user';
 import { clearTokens, setTokens } from '@/lib/auth';
 import { AppRoutes } from './router';
 
+const meMock = {
+	request: { query: GET_ME },
+	result: {
+		data: {
+			user: {
+				id: 'user-1',
+				name: 'Conta teste',
+				email: 'conta@teste.com',
+			},
+		},
+	},
+};
+
 function renderAt(path: string) {
 	return render(
-		<MockedProvider mocks={[]}>
+		<MockedProvider mocks={[meMock]}>
 			<MemoryRouter initialEntries={[path]}>
 				<AppRoutes />
 			</MemoryRouter>
@@ -40,5 +54,12 @@ describe('AppRoutes', () => {
 		setTokens('access-token', 'refresh-token', true);
 		renderAt('/unknown');
 		expect(screen.getByText('HomePage')).toBeInTheDocument();
+	});
+
+	it('renders profile page for authenticated users', async () => {
+		setTokens('access-token', 'refresh-token', true);
+		renderAt('/profile');
+		expect(await screen.findByText('Salvar alterações')).toBeInTheDocument();
+		expect(screen.getByText('Sair da conta')).toBeInTheDocument();
 	});
 });
