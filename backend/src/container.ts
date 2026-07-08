@@ -4,11 +4,13 @@ import { DbTransactionRepository } from './repositories/transaction.repository.t
 import { DbUserRepository } from './repositories/user.repository.ts';
 import { AuthResolver } from './resolvers/auth.resolver.ts';
 import { CategoryResolver } from './resolvers/category.resolver.ts';
+import { DashboardResolver } from './resolvers/dashboard.resolver.ts';
 import { HealthResolver } from './resolvers/health.resolver.ts';
 import { TransactionResolver } from './resolvers/transaction.resolver.ts';
 import { UserResolver } from './resolvers/user.resolver.ts';
 import { AuthService } from './services/auth.service.ts';
 import { CategoryService } from './services/category.service.ts';
+import { DashboardService } from './services/dashboard.service.ts';
 import { HashService } from './services/hash.service.ts';
 import { JwtService } from './services/jwt.service.ts';
 import { TransactionService } from './services/transaction.service.ts';
@@ -37,16 +39,18 @@ export function createAppContainer(): AppContainer {
 	const hashService = new HashService();
 	const jwtService = new JwtService();
 	const authService = new AuthService(userRepository, hashService, jwtService);
-	const categoryService = new CategoryService(categoryRepository);
-	const transactionService = new TransactionService(transactionRepository, categoryRepository);
 	const userService = new UserService(userRepository);
+	const categoryService = new CategoryService(categoryRepository, transactionRepository);
+	const transactionService = new TransactionService(transactionRepository, categoryRepository);
+	const dashboardService = new DashboardService(transactionRepository);
 
 	const instances = new Map<unknown, unknown>([
-		[AuthResolver, new AuthResolver(authService)],
 		[HealthResolver, new HealthResolver()],
+		[AuthResolver, new AuthResolver(authService)],
+		[UserResolver, new UserResolver(userService)],
 		[CategoryResolver, new CategoryResolver(categoryService)],
 		[TransactionResolver, new TransactionResolver(transactionService)],
-		[UserResolver, new UserResolver(userService)],
+		[DashboardResolver, new DashboardResolver(dashboardService)],
 	]);
 
 	const container: ResolverContainer = {

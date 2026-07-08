@@ -567,4 +567,229 @@ describe('Category (integration)', () => {
 			expect(stored).not.toBeNull();
 		});
 	});
+
+	describe('getCategories with includeStats', () => {
+		const CREATE_TRANSACTION = /* GraphQL */ `
+			mutation CreateTransaction($data: CreateTransactionInput!) {
+				createTransaction(data: $data) {
+					id
+				}
+			}
+		`;
+
+		const GET_CATEGORIES_WITH_STATS = /* GraphQL */ `
+			query GetCategories($includeStats: Boolean!) {
+				getCategories(includeStats: $includeStats) {
+					id
+					name
+					transactionCount
+					totalAmount
+				}
+			}
+		`;
+
+		function currentMonthDate(day: number): string {
+			const now = new Date();
+			return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), day)).toISOString();
+		}
+
+		function lastMonthDate(day: number): string {
+			const now = new Date();
+			return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, day)).toISOString();
+		}
+
+		async function createCategoryForUser(
+			name: string,
+			authOverrides?: Parameters<TestApp['authHeader']>[0],
+		) {
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader(authOverrides))
+				.send({
+					query: CREATE_CATEGORY,
+					variables: {
+						data: {
+							name,
+							icon: 'tag',
+							color: '#000000',
+						},
+					},
+				});
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeUndefined();
+
+			return response.body.data.createCategory.id as string;
+		}
+
+		async function createTransactionForUser(
+			categoryId: string,
+			data: {
+				amount: number;
+				type: string;
+				description: string;
+				date: string;
+			},
+			authOverrides?: Parameters<TestApp['authHeader']>[0],
+		) {
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader(authOverrides))
+				.send({
+					query: CREATE_TRANSACTION,
+					variables: { data: { ...data, categoryId } },
+				});
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeUndefined();
+		}
+
+		it('returns null stats when includeStats is false', async () => {
+			await ctx.createUser();
+			const categoryId = await createCategoryForUser('Food');
+			await createTransactionForUser(categoryId, {
+				amount: 50,
+				type: 'EXPENSE',
+				description: 'Groceries',
+				date: currentMonthDate(10),
+			});
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({
+					query: GET_CATEGORIES_WITH_STATS,
+					variables: { includeStats: false },
+				});
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeUndefined();
+			expect(response.body.data.getCategories).toEqual([
+				{
+					id: categoryId,
+					name: 'Food',
+					transactionCount: null,
+					totalAmount: null,
+				},
+			]);
+		});
+
+		it('returns current-month expense stats per category when includeStats is true', async () => {
+			await ctx.createUser();
+			const foodId = await createCategoryForUser('Food');
+			const transportId = await createCategoryForUser('Transport');
+
+			await createTransactionForUser(foodId, {
+				amount: 50,
+				type: 'EXPENSE',
+				description: 'Groceries this month',
+				date: currentMonthDate(10),
+			});
+			await createTransactionForUser(foodId, {
+				amount: 30,
+				type: 'EXPENSE',
+				description: 'More groceries this month',
+				date: currentMonthDate(15),
+			});
+			await createTransactionForUser(foodId, {
+				amount: 100,
+				type: 'EXPENSE',
+				description: 'Groceries last month',
+				date: lastMonthDate(10),
+			});
+			await createTransactionForUser(foodId, {
+				amount: 200,
+				type: 'INCOME',
+				description: 'Refund',
+				date: currentMonthDate(12),
+			});
+			await createTransactionForUser(transportId, {
+				amount: 25,
+				type: 'EXPENSE',
+				description: 'Bus fare',
+				date: currentMonthDate(8),
+			});
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({
+					query: GET_CATEGORIES_WITH_STATS,
+					variables: { includeStats: true },
+				});
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeUndefined();
+			expect(response.body.data.getCategories).toEqual(
+				expect.arrayContaining([
+					{
+						id: foodId,
+						name: 'Food',
+						transactionCount: 2,
+						totalAmount: 80,
+					},
+					{
+						id: transportId,
+						name: 'Transport',
+						transactionCount: 1,
+						totalAmount: 25,
+					},
+				]),
+			);
+		});
+
+		it('does not include another user category stats', async () => {
+			await ctx.createUser({ id: 'user-a', email: 'a@example.com' });
+			await ctx.createUser({ id: 'user-b', email: 'b@example.com' });
+
+			const categoryA = await createCategoryForUser('Food', {
+				id: 'user-a',
+				email: 'a@example.com',
+			});
+			const categoryB = await createCategoryForUser('Food', {
+				id: 'user-b',
+				email: 'b@example.com',
+			});
+
+			await createTransactionForUser(
+				categoryA,
+				{
+					amount: 40,
+					type: 'EXPENSE',
+					description: 'User A expense',
+					date: currentMonthDate(5),
+				},
+				{ id: 'user-a', email: 'a@example.com' },
+			);
+			await createTransactionForUser(
+				categoryB,
+				{
+					amount: 999,
+					type: 'EXPENSE',
+					description: 'User B expense',
+					date: currentMonthDate(5),
+				},
+				{ id: 'user-b', email: 'b@example.com' },
+			);
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader({ id: 'user-a', email: 'a@example.com' }))
+				.send({
+					query: GET_CATEGORIES_WITH_STATS,
+					variables: { includeStats: true },
+				});
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeUndefined();
+			expect(response.body.data.getCategories).toEqual([
+				{
+					id: categoryA,
+					name: 'Food',
+					transactionCount: 1,
+					totalAmount: 40,
+				},
+			]);
+		});
+	});
 });

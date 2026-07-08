@@ -1,4 +1,4 @@
-import { Field, ID, ObjectType } from 'type-graphql';
+import { Field, Float, ID, Int, ObjectType } from 'type-graphql';
 
 @ObjectType()
 export class CategoryModel {
@@ -19,4 +19,10 @@ export class CategoryModel {
 
 	@Field(() => ID)
 	userId!: string;
+
+	@Field(() => Int, { nullable: true })
+	transactionCount?: number | null;
+
+	@Field(() => Float, { nullable: true })
+	totalAmount?: number | null;
 }

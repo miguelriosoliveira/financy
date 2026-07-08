@@ -23,8 +23,11 @@ export class CategoryResolver {
 	}
 
 	@Query(() => [CategoryModel])
-	async getCategories(@UserInfo() user: JwtPayload): Promise<CategoryModel[]> {
-		return this.categoryService.findAll(user.id);
+	async getCategories(
+		@Arg('includeStats', () => Boolean, { defaultValue: false }) includeStats: boolean,
+		@UserInfo() user: JwtPayload,
+	): Promise<CategoryModel[]> {
+		return this.categoryService.findAll(user.id, { includeStats });
 	}
 
 	@Mutation(() => CategoryModel)

@@ -1,16 +1,25 @@
 import type {
+	CategoryAggregation,
 	DbTransactionClient,
 	TransactionCreateProps,
 	TransactionFindManyProps,
 	TransactionUpdateProps,
 	TransactionWithCategory,
 } from '../db/db-transaction-client.interface.ts';
+import type { TransactionType } from '../models/transaction-type.ts';
+import type { DateRange } from '../utils/date-range.ts';
 
 export interface TransactionRepository {
 	create(props: TransactionCreateProps): Promise<TransactionWithCategory>;
 	findById(id: string): Promise<TransactionWithCategory | null>;
 	findMany(userId: string, props: TransactionFindManyProps): Promise<TransactionWithCategory[]>;
 	count(userId: string): Promise<number>;
+	sumByType(userId: string, type: TransactionType, dateRange?: DateRange): Promise<number>;
+	groupByCategory(
+		userId: string,
+		dateRange: DateRange,
+		type: TransactionType,
+	): Promise<CategoryAggregation[]>;
 	update(id: string, props: TransactionUpdateProps): Promise<TransactionWithCategory>;
 	delete(id: string): Promise<TransactionWithCategory>;
 }
@@ -35,6 +44,18 @@ export class DbTransactionRepository implements TransactionRepository {
 
 	async count(userId: string): Promise<number> {
 		return this.dbTransactionClient.transaction.count(userId);
+	}
+
+	async sumByType(userId: string, type: TransactionType, dateRange?: DateRange): Promise<number> {
+		return this.dbTransactionClient.transaction.sumByType(userId, type, dateRange);
+	}
+
+	async groupByCategory(
+		userId: string,
+		dateRange: DateRange,
+		type: TransactionType,
+	): Promise<CategoryAggregation[]> {
+		return this.dbTransactionClient.transaction.groupByCategory(userId, dateRange, type);
 	}
 
 	async update(id: string, props: TransactionUpdateProps): Promise<TransactionWithCategory> {

@@ -3,6 +3,7 @@ import { env } from '../env.ts';
 import type { CategoryModel } from '../models/category.model.ts';
 import type { TransactionType } from '../models/transaction-type.ts';
 import type { UserModel } from '../models/user.model.ts';
+import type { DateRange } from '../utils/date-range.ts';
 import type {
 	CategoryCreateProps,
 	CategoryUpdateProps,
@@ -10,6 +11,7 @@ import type {
 } from './db-category-client.interface.ts';
 import type { DbClient } from './db-client.interface.ts';
 import type {
+	CategoryAggregation,
 	DbTransactionClient,
 	TransactionCreateProps,
 	TransactionFindManyProps,
@@ -118,6 +120,56 @@ export class PrismaDbClient
 
 		count: (userId: string): Promise<number> =>
 			this.client.transaction.count({ where: { userId } }),
+
+		sumByType: async (
+			userId: string,
+			type: TransactionType,
+			dateRange?: DateRange,
+		): Promise<number> => {
+			const result = await this.client.transaction.aggregate({
+				where: {
+					userId,
+					type,
+					...(dateRange
+						? {
+								date: {
+									gte: dateRange.start,
+									lt: dateRange.end,
+								},
+							}
+						: {}),
+				},
+				_sum: { amount: true },
+			});
+
+			return result._sum.amount ?? 0;
+		},
+
+		groupByCategory: async (
+			userId: string,
+			dateRange: DateRange,
+			type: TransactionType,
+		): Promise<CategoryAggregation[]> => {
+			const groups = await this.client.transaction.groupBy({
+				by: ['categoryId'],
+				where: {
+					userId,
+					type,
+					date: {
+						gte: dateRange.start,
+						lt: dateRange.end,
+					},
+				},
+				_count: { id: true },
+				_sum: { amount: true },
+			});
+
+			return groups.map(group => ({
+				categoryId: group.categoryId,
+				transactionCount: group._count.id,
+				totalAmount: group._sum.amount ?? 0,
+			}));
+		},
 
 		update: async (id: string, props: TransactionUpdateProps): Promise<TransactionWithCategory> => {
 			const transaction = await this.client.transaction.update({

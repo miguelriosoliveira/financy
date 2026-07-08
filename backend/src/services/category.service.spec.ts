@@ -3,6 +3,7 @@ import { GraphQLError } from 'graphql';
 import { beforeEach, describe, expect, it, type Mocked } from 'vitest';
 import type { CategoryModel } from '../models/category.model.ts';
 import type { CategoryRepository } from '../repositories/category.repository.ts';
+import type { TransactionRepository } from '../repositories/transaction.repository.ts';
 import { mockOf } from '../tests/helpers/mocks.ts';
 import { CategoryService } from './category.service.ts';
 
@@ -12,10 +13,12 @@ const OTHER_USER_ID = 'user-2';
 describe('CategoryService', () => {
 	let categoryService: CategoryService;
 	let mockCategoryRepository: Mocked<CategoryRepository>;
+	let mockTransactionRepository: Mocked<TransactionRepository>;
 
 	beforeEach(() => {
 		mockCategoryRepository = mockOf<CategoryRepository>();
-		categoryService = new CategoryService(mockCategoryRepository);
+		mockTransactionRepository = mockOf<TransactionRepository>();
+		categoryService = new CategoryService(mockCategoryRepository, mockTransactionRepository);
 	});
 
 	describe('create', () => {

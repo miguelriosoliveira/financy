@@ -9,6 +9,8 @@ type CategoryModel {
   icon: String!
   id: ID!
   name: String!
+  totalAmount: Float
+  transactionCount: Int
   userId: ID!
 }
 
@@ -25,6 +27,12 @@ input CreateTransactionInput {
   date: DateTimeISO!
   description: String
   type: TransactionType!
+}
+
+type DashboardSummary {
+  monthlyExpenses: Float!
+  monthlyIncome: Float!
+  totalBalance: Float!
 }
 
 """
@@ -56,7 +64,8 @@ type Mutation {
 }
 
 type Query {
-  getCategories: [CategoryModel!]!
+  getCategories(includeStats: Boolean! = false): [CategoryModel!]!
+  getDashboardSummary: DashboardSummary!
   getMe: UserProfileOutput!
   getTransactions(page: Int! = 1, pageSize: Int! = 10): TransactionPage!
   health: String!

@@ -2,10 +2,16 @@ import { ERROR_CODES } from '@financy/shared';
 import { GraphQLError } from 'graphql';
 import type { CreateCategoryInput, UpdateCategoryInput } from '../dtos/input/category.input.ts';
 import type { CategoryModel } from '../models/category.model.ts';
+import { TransactionType } from '../models/transaction-type.ts';
 import type { CategoryRepository } from '../repositories/category.repository.ts';
+import type { TransactionRepository } from '../repositories/transaction.repository.ts';
+import { getCurrentMonthRange } from '../utils/date-range.ts';
 
 export class CategoryService {
-	constructor(private readonly categoryRepository: CategoryRepository) {}
+	constructor(
+		private readonly categoryRepository: CategoryRepository,
+		private readonly transactionRepository: TransactionRepository,
+	) {}
 
 	async create(
 		userId: string,
@@ -20,8 +26,31 @@ export class CategoryService {
 		return this.categoryRepository.create({ name, description, icon, color, userId });
 	}
 
-	async findAll(userId: string): Promise<CategoryModel[]> {
-		return this.categoryRepository.findAll(userId);
+	async findAll(userId: string, options?: { includeStats?: boolean }): Promise<CategoryModel[]> {
+		const categories = await this.categoryRepository.findAll(userId);
+
+		if (!options?.includeStats) {
+			return categories;
+		}
+
+		const aggregations = await this.transactionRepository.groupByCategory(
+			userId,
+			getCurrentMonthRange(),
+			TransactionType.EXPENSE,
+		);
+		const aggregationByCategoryId = new Map(
+			aggregations.map(aggregation => [aggregation.categoryId, aggregation]),
+		);
+
+		return categories.map(category => {
+			const aggregation = aggregationByCategoryId.get(category.id);
+
+			return {
+				...category,
+				transactionCount: aggregation?.transactionCount ?? 0,
+				totalAmount: aggregation?.totalAmount ?? 0,
+			};
+		});
 	}
 
 	async update(
