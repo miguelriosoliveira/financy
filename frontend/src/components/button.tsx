@@ -8,6 +8,7 @@ const button = tv({
 		color: {
 			primary: 'bg-brand-base text-white hover:bg-brand-dark',
 			secondary: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-200',
+			link: 'bg-transparent font-normal text-brand-base hover:bg-transparent hover:font-semibold',
 		},
 		size: {
 			md: "h-12 px-4 py-3 text-base [&_svg:not([class*='size-'])]:size-[18px]",

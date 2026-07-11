@@ -5,6 +5,7 @@ import { Button } from '@/components/button';
 import { Tag } from '@/components/tag';
 import { Button as ShadcnButton } from '@/components/ui/button';
 import type { TransactionRow } from '@/hooks/use-transactions';
+import { formatSignedAmount } from '@/lib/format-currency';
 import { cn } from '@/lib/utils';
 import { CategoryIcon } from '@/pages/authenticated/categories/components/category-icon';
 import { TransactionTypeDisplay } from './transaction-type-display';
@@ -19,14 +20,6 @@ type TransactionTableProps = {
 	onEdit: (transaction: TransactionRow) => void;
 	onDelete: (transaction: TransactionRow) => void;
 };
-
-function formatCurrency(value: number, type: TransactionRow['type']) {
-	const formatted = value.toLocaleString('pt-BR', {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
-	});
-	return type === 'INCOME' ? `+ R$ ${formatted}` : `- R$ ${formatted}`;
-}
 
 function formatTransactionDate(date: string) {
 	return format(parseISO(date), 'dd/MM/yy', { locale: ptBR });
@@ -110,7 +103,7 @@ export function TransactionTable({
 									transaction.type === 'INCOME' ? 'text-green-base' : 'text-gray-800',
 								)}
 							>
-								{formatCurrency(transaction.amount, transaction.type)}
+								{formatSignedAmount(transaction.amount, transaction.type)}
 							</td>
 							<td className="px-6 py-4 text-right">
 								<div className="flex items-center justify-end gap-2">

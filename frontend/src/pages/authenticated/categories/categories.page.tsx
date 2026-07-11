@@ -8,8 +8,8 @@ import { Button } from '@/components/button';
 import { type CategoryRow, GET_CATEGORIES, useCategories } from '@/hooks/use-categories';
 import { CategoryCard } from './components/category-card';
 import { CategoryFormDialog } from './components/category-form-dialog';
+import { CategoryHeaderCard } from './components/category-header-card';
 import { DeleteCategoryDialog } from './components/delete-category-dialog';
-import { HeaderCard } from './components/header-card';
 
 export const CREATE_CATEGORY = gql`
 	mutation CreateCategory($data: CreateCategoryInput!) {
@@ -72,7 +72,7 @@ export function CategoriesPage() {
 		setCreateServerError(undefined);
 		createCategory({
 			variables: { data },
-			refetchQueries: [{ query: GET_CATEGORIES }],
+			refetchQueries: [{ query: GET_CATEGORIES, variables: { includeStats: false } }],
 			awaitRefetchQueries: true,
 		})
 			.then(() => {
@@ -104,7 +104,7 @@ export function CategoriesPage() {
 		setEditServerError(undefined);
 		editCategory({
 			variables: { id: editingTarget.id, data },
-			refetchQueries: [{ query: GET_CATEGORIES }],
+			refetchQueries: [{ query: GET_CATEGORIES, variables: { includeStats: false } }],
 			awaitRefetchQueries: true,
 		})
 			.then(() => {
@@ -135,7 +135,7 @@ export function CategoriesPage() {
 
 		deleteCategory({
 			variables: { id: deletingTarget.id },
-			refetchQueries: [{ query: GET_CATEGORIES }],
+			refetchQueries: [{ query: GET_CATEGORIES, variables: { includeStats: false } }],
 			awaitRefetchQueries: true,
 		})
 			.then(() => {
@@ -177,17 +177,17 @@ export function CategoriesPage() {
 			</div>
 
 			<div className="grid grid-cols-3 gap-6">
-				<HeaderCard
+				<CategoryHeaderCard
 					icon={<TagIcon className="text-gray-700" />}
 					title="Total de categorias"
 					value={String(categories.length)}
 				/>
-				<HeaderCard
+				<CategoryHeaderCard
 					icon={<ArrowUpDownIcon className="text-purple-base" />}
 					title="Total de transações"
 					value="27"
 				/>
-				<HeaderCard
+				<CategoryHeaderCard
 					icon={<UtensilsIcon className="text-blue-base" />}
 					title="Categoria mais utilizada"
 					value="Alimentação"

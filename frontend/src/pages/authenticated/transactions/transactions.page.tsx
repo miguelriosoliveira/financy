@@ -7,25 +7,17 @@ import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { Button } from '@/components/button';
 import { useCategories } from '@/hooks/use-categories';
-import { GET_TRANSACTIONS, type TransactionRow, useTransactions } from '@/hooks/use-transactions';
+import {
+	GET_TRANSACTIONS,
+	type TransactionRow,
+	useCreateTransaction,
+	useTransactions,
+} from '@/hooks/use-transactions';
+import { invalidateTransactionDerivedDashboardCache } from '@/lib/invalidate-transaction-derived-cache';
 import { DeleteTransactionDialog } from './components/delete-transaction-dialog';
 import { TransactionFilters } from './components/transaction-filters';
 import { TransactionFormDialog } from './components/transaction-form-dialog';
 import { TransactionTable } from './components/transaction-table';
-
-export const CREATE_TRANSACTION = gql`
-	mutation CreateTransaction($data: CreateTransactionInput!) {
-		createTransaction(data: $data) {
-			id
-			amount
-			type
-			description
-			date
-			categoryId
-			userId
-		}
-	}
-`;
 
 export const EDIT_TRANSACTION = gql`
 	mutation EditTransaction($id: ID!, $data: UpdateTransactionInput!) {
@@ -73,7 +65,7 @@ export function TransactionsPage() {
 	const [page, setPage] = useState(1);
 	const { categories } = useCategories();
 	const { transactions, totalCount, pageSize, loading } = useTransactions({ page });
-	const [createTransaction, { loading: creatingTransaction }] = useMutation(CREATE_TRANSACTION);
+	const [createTransaction, { loading: creatingTransaction }] = useCreateTransaction();
 	const [editTransaction, { loading: editingTransaction }] = useMutation(EDIT_TRANSACTION);
 	const [deleteTransaction, { loading: deletingTransaction }] = useMutation(DELETE_TRANSACTION);
 
@@ -128,6 +120,9 @@ export function TransactionsPage() {
 			},
 			refetchQueries: [{ query: GET_TRANSACTIONS, variables: { page, pageSize } }],
 			awaitRefetchQueries: true,
+			update(cache) {
+				invalidateTransactionDerivedDashboardCache(cache);
+			},
 		})
 			.then(() => {
 				toast.success('Transação editada com sucesso');

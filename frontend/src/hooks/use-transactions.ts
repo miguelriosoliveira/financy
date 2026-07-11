@@ -1,5 +1,5 @@
 import { gql } from '@apollo/client';
-import { useQuery } from '@apollo/client/react';
+import { useMutation, useQuery } from '@apollo/client/react';
 import type { TagColor } from '@/components/tag';
 import type { CategoryType } from '@/pages/authenticated/categories/components/category-icon';
 
@@ -24,6 +24,20 @@ export const GET_TRANSACTIONS = gql`
 			totalCount
 			page
 			pageSize
+		}
+	}
+`;
+
+export const CREATE_TRANSACTION = gql`
+	mutation CreateTransaction($data: CreateTransactionInput!) {
+		createTransaction(data: $data) {
+			id
+			amount
+			type
+			description
+			date
+			categoryId
+			userId
 		}
 	}
 `;
@@ -73,4 +87,8 @@ export function useTransactions({
 		pageSize: data?.getTransactions.pageSize ?? pageSize,
 		loading,
 	};
+}
+
+export function useCreateTransaction() {
+	return useMutation(CREATE_TRANSACTION);
 }

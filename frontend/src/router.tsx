@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-route
 import { setNavigate } from './lib/navigation.ts';
 import { AuthenticatedLayout } from './pages/authenticated/authenticated.layout';
 import { CategoriesPage } from './pages/authenticated/categories/categories.page';
-import { HomePage } from './pages/authenticated/home.page';
+import { DashboardPage } from './pages/authenticated/dashboard/dashboard.page.tsx';
 import { ProfilePage } from './pages/authenticated/profile/profile.page';
 import { TransactionsPage } from './pages/authenticated/transactions/transactions.page';
 import { LoginPage } from './pages/non-authenticated/login.page';
@@ -18,7 +18,7 @@ export function AppRoutes() {
 				<Route path="register" element={<RegisterPage />} />
 			</Route>
 			<Route element={<AuthenticatedLayout />}>
-				<Route path="/" element={<HomePage />} />
+				<Route path="/" element={<DashboardPage />} />
 				<Route path="/transactions" element={<TransactionsPage />} />
 				<Route path="/categories" element={<CategoriesPage />} />
 				<Route path="/profile" element={<ProfilePage />} />

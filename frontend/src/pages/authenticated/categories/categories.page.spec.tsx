@@ -62,8 +62,16 @@ const UPDATED_CATEGORY = {
 
 function getCategoriesMock(categories: CategoryMock[] = []): MockLink.MockedResponse {
 	return {
-		request: { query: GET_CATEGORIES },
-		result: { data: { getCategories: categories } },
+		request: { query: GET_CATEGORIES, variables: { includeStats: false } },
+		result: {
+			data: {
+				getCategories: categories.map(category => ({
+					...category,
+					transactionCount: null,
+					totalAmount: null,
+				})),
+			},
+		},
 	};
 }
 

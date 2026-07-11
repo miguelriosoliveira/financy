@@ -7,11 +7,11 @@ type Props = {
 	value: string;
 };
 
-export function HeaderCard({ icon, title, value }: Props) {
+export function CategoryHeaderCard({ icon, title, value }: Props) {
 	return (
 		<Card>
 			<CardContent className="flex items-baseline gap-4">
-				{icon}
+				<div className="size-8 shrink-0">{icon}</div>
 				<div className="flex flex-col gap-2">
 					<span className="font-bold text-3xl">{value}</span>
 					<span className="font-normal text-gray-500 text-xs uppercase">{title}</span>

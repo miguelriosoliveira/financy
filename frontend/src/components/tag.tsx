@@ -3,7 +3,7 @@ import { tv, type VariantProps } from 'tailwind-variants';
 import { Badge } from './ui/badge';
 
 const tag = tv({
-	base: 'font-normal rounded-xl px-3 py-3.5 text-sm',
+	base: 'rounded-xl px-3 py-3.5 font-normal text-sm',
 	variants: {
 		color: {
 			gray: 'bg-gray-200 text-gray-700',

@@ -4,17 +4,25 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GET_CATEGORIES } from '@/hooks/use-categories';
 import {
+	CREATE_TRANSACTION,
 	DEFAULT_TRANSACTION_PAGE_SIZE,
 	GET_TRANSACTIONS,
 	type TransactionRow,
 } from '@/hooks/use-transactions';
+import { invalidateTransactionDerivedDashboardCache } from '@/lib/invalidate-transaction-derived-cache';
 import { renderWithProviders } from '@/tests/helpers/render';
-import {
-	CREATE_TRANSACTION,
-	DELETE_TRANSACTION,
-	EDIT_TRANSACTION,
-	TransactionsPage,
-} from './transactions.page';
+import { DELETE_TRANSACTION, EDIT_TRANSACTION, TransactionsPage } from './transactions.page';
+
+vi.mock('@/lib/invalidate-transaction-derived-cache', async importOriginal => {
+	const actual =
+		await importOriginal<typeof import('@/lib/invalidate-transaction-derived-cache')>();
+	return {
+		...actual,
+		invalidateTransactionDerivedDashboardCache: vi.fn(
+			actual.invalidateTransactionDerivedDashboardCache,
+		),
+	};
+});
 
 const mockToastSuccess = vi.fn();
 const mockToastError = vi.fn();
@@ -143,8 +151,16 @@ const EDIT_MUTATION_VARIABLES = {
 
 function getCategoriesMock(categories: (typeof EXISTING_CATEGORY)[] = []): MockLink.MockedResponse {
 	return {
-		request: { query: GET_CATEGORIES },
-		result: { data: { getCategories: categories } },
+		request: { query: GET_CATEGORIES, variables: { includeStats: false } },
+		result: {
+			data: {
+				getCategories: categories.map(category => ({
+					...category,
+					transactionCount: null,
+					totalAmount: null,
+				})),
+			},
+		},
 	};
 }
 
@@ -565,6 +581,7 @@ describe('TransactionsPage', () => {
 		});
 
 		expect(mockToastError).not.toHaveBeenCalled();
+		expect(invalidateTransactionDerivedDashboardCache).toHaveBeenCalledTimes(1);
 	});
 
 	it('shows a field error and toast when the transaction is not found', async () => {
