@@ -65,7 +65,6 @@ export function LoginPage() {
 				if (loginResult?.token && loginResult?.refreshToken) {
 					setTokens(loginResult.token, loginResult.refreshToken, rememberMe);
 				}
-				toast.success('Login realizado com sucesso');
 				navigate('/');
 			})
 			.catch(() => toast.error('Erro ao fazer login'));

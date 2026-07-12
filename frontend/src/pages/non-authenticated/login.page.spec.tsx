@@ -175,11 +175,11 @@ describe('LoginPage', () => {
 		await user.click(screen.getByRole('button', { name: 'Entrar' }));
 
 		await waitFor(() => {
-			expect(mockToastSuccess).toHaveBeenCalledWith('Login realizado com sucesso');
+			expect(mockNavigate).toHaveBeenCalledWith('/');
 		});
 
 		expect(getToken()).toBe('access-token');
-		expect(mockNavigate).toHaveBeenCalledWith('/');
+		expect(mockToastSuccess).not.toHaveBeenCalled();
 		expect(mockToastError).not.toHaveBeenCalled();
 	});
 
@@ -192,9 +192,10 @@ describe('LoginPage', () => {
 		await user.click(screen.getByRole('button', { name: 'Entrar' }));
 
 		await waitFor(() => {
-			expect(mockToastSuccess).toHaveBeenCalledWith('Login realizado com sucesso');
+			expect(sessionStorage.getItem(TOKEN_KEY)).toBe('access-token');
 		});
 
+		expect(mockToastSuccess).not.toHaveBeenCalled();
 		expect(sessionStorage.getItem(TOKEN_KEY)).toBe('access-token');
 		expect(sessionStorage.getItem(REFRESH_TOKEN_KEY)).toBe('refresh-token');
 		expect(localStorage.getItem(TOKEN_KEY)).toBeNull();
@@ -211,9 +212,10 @@ describe('LoginPage', () => {
 		await user.click(screen.getByRole('button', { name: 'Entrar' }));
 
 		await waitFor(() => {
-			expect(mockToastSuccess).toHaveBeenCalledWith('Login realizado com sucesso');
+			expect(localStorage.getItem(TOKEN_KEY)).toBe('access-token');
 		});
 
+		expect(mockToastSuccess).not.toHaveBeenCalled();
 		expect(localStorage.getItem(TOKEN_KEY)).toBe('access-token');
 		expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBe('refresh-token');
 		expect(sessionStorage.getItem(TOKEN_KEY)).toBeNull();
