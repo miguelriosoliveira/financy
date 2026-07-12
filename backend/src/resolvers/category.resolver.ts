@@ -2,6 +2,7 @@ import { createCategorySchema, updateCategorySchema } from '@financy/shared';
 import { Arg, Authorized, ID, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql';
 import { UserInfo } from '../auth/user-info.decorator.ts';
 import { CreateCategoryInput, UpdateCategoryInput } from '../dtos/input/category.input.ts';
+import { CategoriesSummary } from '../dtos/output/categories-summary.output.ts';
 import { Validate } from '../middlewares/validate.middleware.ts';
 import { CategoryModel } from '../models/category.model.ts';
 import type { CategoryService } from '../services/category.service.ts';
@@ -28,6 +29,11 @@ export class CategoryResolver {
 		@UserInfo() user: JwtPayload,
 	): Promise<CategoryModel[]> {
 		return this.categoryService.findAll(user.id, { includeStats });
+	}
+
+	@Query(() => CategoriesSummary)
+	async getCategoriesSummary(@UserInfo() user: JwtPayload): Promise<CategoriesSummary> {
+		return this.categoryService.getSummary(user.id);
 	}
 
 	@Mutation(() => CategoryModel)

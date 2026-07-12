@@ -3,6 +3,11 @@
 # !!!   DO NOT MODIFY THIS FILE BY YOURSELF   !!!
 # -----------------------------------------------
 
+type CategoriesSummary {
+  mostUsedCategory: CategoryUsageSummary
+  transactionCount: Int!
+}
+
 type CategoryModel {
   color: String!
   description: String
@@ -12,6 +17,12 @@ type CategoryModel {
   totalAmount: Float
   transactionCount: Int
   userId: ID!
+}
+
+type CategoryUsageSummary {
+  id: ID!
+  name: String!
+  transactionCount: Int!
 }
 
 input CreateCategoryInput {
@@ -65,6 +76,7 @@ type Mutation {
 
 type Query {
   getCategories(includeStats: Boolean! = false): [CategoryModel!]!
+  getCategoriesSummary: CategoriesSummary!
   getDashboardSummary: DashboardSummary!
   getMe: UserProfileOutput!
   getTransactions(page: Int! = 1, pageSize: Int! = 10): TransactionPage!

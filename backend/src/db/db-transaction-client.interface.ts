@@ -28,6 +28,11 @@ export type CategoryAggregation = {
 	totalAmount: number;
 };
 
+export type CategoryAggregationFilters = {
+	dateRange?: DateRange;
+	type?: TransactionType;
+};
+
 export interface DbTransactionClient {
 	transaction: {
 		create(props: TransactionCreateProps): Promise<TransactionWithCategory>;
@@ -37,8 +42,7 @@ export interface DbTransactionClient {
 		sumByType(userId: string, type: TransactionType, dateRange?: DateRange): Promise<number>;
 		groupByCategory(
 			userId: string,
-			dateRange: DateRange,
-			type: TransactionType,
+			filters?: CategoryAggregationFilters,
 		): Promise<CategoryAggregation[]>;
 		update(id: string, props: TransactionUpdateProps): Promise<TransactionWithCategory>;
 		delete(id: string): Promise<TransactionWithCategory>;

@@ -179,6 +179,135 @@ describe('CategoryService', () => {
 		});
 	});
 
+	describe('getSummary', () => {
+		const foodCategory = {
+			id: 'uuid-food',
+			userId: USER_ID,
+			name: 'Food',
+			description: null,
+			icon: 'utensils',
+			color: '#ff0000',
+		} satisfies CategoryModel;
+
+		const transportCategory = {
+			id: 'uuid-transport',
+			userId: USER_ID,
+			name: 'Transport',
+			description: null,
+			icon: 'car',
+			color: '#0000ff',
+		} satisfies CategoryModel;
+
+		it('returns zero total and null most-used category when there are no transactions', async () => {
+			mockCategoryRepository.findAll.mockResolvedValueOnce([foodCategory]);
+			mockTransactionRepository.groupByCategory.mockResolvedValueOnce([]);
+
+			const result = await categoryService.getSummary(USER_ID);
+
+			expect(mockCategoryRepository.findAll).toHaveBeenCalledWith(USER_ID);
+			expect(mockTransactionRepository.groupByCategory).toHaveBeenCalledWith(USER_ID);
+			expect(result).toEqual({
+				transactionCount: 0,
+				mostUsedCategory: null,
+			});
+		});
+
+		it('returns summed total and the category with the highest transaction count', async () => {
+			mockCategoryRepository.findAll.mockResolvedValueOnce([foodCategory, transportCategory]);
+			mockTransactionRepository.groupByCategory.mockResolvedValueOnce([
+				{ categoryId: foodCategory.id, transactionCount: 3, totalAmount: 150 },
+				{ categoryId: transportCategory.id, transactionCount: 1, totalAmount: 25 },
+			]);
+
+			const result = await categoryService.getSummary(USER_ID);
+
+			expect(result).toEqual({
+				transactionCount: 4,
+				mostUsedCategory: {
+					id: foodCategory.id,
+					name: foodCategory.name,
+					transactionCount: 3,
+				},
+			});
+		});
+
+		it('breaks ties by category name ascending', async () => {
+			const alphaCategory = {
+				id: 'uuid-alpha',
+				userId: USER_ID,
+				name: 'Alpha',
+				description: null,
+				icon: 'a',
+				color: '#111111',
+			} satisfies CategoryModel;
+			const betaCategory = {
+				id: 'uuid-beta',
+				userId: USER_ID,
+				name: 'Beta',
+				description: null,
+				icon: 'b',
+				color: '#222222',
+			} satisfies CategoryModel;
+
+			mockCategoryRepository.findAll.mockResolvedValueOnce([betaCategory, alphaCategory]);
+			mockTransactionRepository.groupByCategory.mockResolvedValueOnce([
+				{ categoryId: betaCategory.id, transactionCount: 2, totalAmount: 20 },
+				{ categoryId: alphaCategory.id, transactionCount: 2, totalAmount: 10 },
+			]);
+
+			const result = await categoryService.getSummary(USER_ID);
+
+			expect(result.mostUsedCategory).toEqual({
+				id: alphaCategory.id,
+				name: alphaCategory.name,
+				transactionCount: 2,
+			});
+		});
+
+		it('breaks name ties by category id ascending', async () => {
+			const categoryA = {
+				id: 'uuid-a',
+				userId: USER_ID,
+				name: 'Same',
+				description: null,
+				icon: 'a',
+				color: '#111111',
+			} satisfies CategoryModel;
+			const categoryB = {
+				id: 'uuid-b',
+				userId: USER_ID,
+				name: 'Same',
+				description: null,
+				icon: 'b',
+				color: '#222222',
+			} satisfies CategoryModel;
+
+			mockCategoryRepository.findAll.mockResolvedValueOnce([categoryB, categoryA]);
+			mockTransactionRepository.groupByCategory.mockResolvedValueOnce([
+				{ categoryId: categoryB.id, transactionCount: 2, totalAmount: 20 },
+				{ categoryId: categoryA.id, transactionCount: 2, totalAmount: 10 },
+			]);
+
+			const result = await categoryService.getSummary(USER_ID);
+
+			expect(result.mostUsedCategory).toEqual({
+				id: categoryA.id,
+				name: categoryA.name,
+				transactionCount: 2,
+			});
+		});
+
+		it('scopes repository calls to the requested user', async () => {
+			mockCategoryRepository.findAll.mockResolvedValueOnce([]);
+			mockTransactionRepository.groupByCategory.mockResolvedValueOnce([]);
+
+			await categoryService.getSummary(USER_ID);
+
+			expect(mockCategoryRepository.findAll).toHaveBeenCalledWith(USER_ID);
+			expect(mockTransactionRepository.groupByCategory).toHaveBeenCalledWith(USER_ID);
+		});
+	});
+
 	describe('delete', () => {
 		const categoryId = 'uuid-1';
 		const existing = {

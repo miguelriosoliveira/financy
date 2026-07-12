@@ -12,6 +12,7 @@ import type {
 import type { DbClient } from './db-client.interface.ts';
 import type {
 	CategoryAggregation,
+	CategoryAggregationFilters,
 	DbTransactionClient,
 	TransactionCreateProps,
 	TransactionFindManyProps,
@@ -147,18 +148,21 @@ export class PrismaDbClient
 
 		groupByCategory: async (
 			userId: string,
-			dateRange: DateRange,
-			type: TransactionType,
+			filters?: CategoryAggregationFilters,
 		): Promise<CategoryAggregation[]> => {
 			const groups = await this.client.transaction.groupBy({
 				by: ['categoryId'],
 				where: {
 					userId,
-					type,
-					date: {
-						gte: dateRange.start,
-						lt: dateRange.end,
-					},
+					...(filters?.type ? { type: filters.type } : {}),
+					...(filters?.dateRange
+						? {
+								date: {
+									gte: filters.dateRange.start,
+									lt: filters.dateRange.end,
+								},
+							}
+						: {}),
 				},
 				_count: { id: true },
 				_sum: { amount: true },

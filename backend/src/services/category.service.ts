@@ -1,6 +1,10 @@
 import { ERROR_CODES } from '@financy/shared';
 import { GraphQLError } from 'graphql';
 import type { CreateCategoryInput, UpdateCategoryInput } from '../dtos/input/category.input.ts';
+import type {
+	CategoriesSummary,
+	CategoryUsageSummary,
+} from '../dtos/output/categories-summary.output.ts';
 import type { CategoryModel } from '../models/category.model.ts';
 import { TransactionType } from '../models/transaction-type.ts';
 import type { CategoryRepository } from '../repositories/category.repository.ts';
@@ -33,11 +37,10 @@ export class CategoryService {
 			return categories;
 		}
 
-		const aggregations = await this.transactionRepository.groupByCategory(
-			userId,
-			getCurrentMonthRange(),
-			TransactionType.EXPENSE,
-		);
+		const aggregations = await this.transactionRepository.groupByCategory(userId, {
+			dateRange: getCurrentMonthRange(),
+			type: TransactionType.EXPENSE,
+		});
 		const aggregationByCategoryId = new Map(
 			aggregations.map(aggregation => [aggregation.categoryId, aggregation]),
 		);
@@ -51,6 +54,27 @@ export class CategoryService {
 				totalAmount: aggregation?.totalAmount ?? 0,
 			};
 		});
+	}
+
+	async getSummary(userId: string): Promise<CategoriesSummary> {
+		const [categories, aggregations] = await Promise.all([
+			this.categoryRepository.findAll(userId),
+			this.transactionRepository.groupByCategory(userId),
+		]);
+
+		const transactionCount = aggregations.reduce(
+			(sum, aggregation) => sum + aggregation.transactionCount,
+			0,
+		);
+
+		if (transactionCount === 0) {
+			return { transactionCount: 0, mostUsedCategory: null };
+		}
+
+		const categoriesById = new Map(categories.map(category => [category.id, category]));
+		const mostUsedCategory = pickMostUsedCategory(categoriesById, aggregations);
+
+		return { transactionCount, mostUsedCategory };
 	}
 
 	async update(
@@ -87,4 +111,40 @@ export class CategoryService {
 
 		return this.categoryRepository.delete(id);
 	}
+}
+
+function pickMostUsedCategory(
+	categoriesById: Map<string, CategoryModel>,
+	aggregations: { categoryId: string; transactionCount: number }[],
+): CategoryUsageSummary | null {
+	const ranked = aggregations
+		.filter(aggregation => aggregation.transactionCount > 0)
+		.flatMap(aggregation => {
+			const category = categoriesById.get(aggregation.categoryId);
+			if (!category) {
+				return [];
+			}
+
+			return [
+				{
+					id: category.id,
+					name: category.name,
+					transactionCount: aggregation.transactionCount,
+				} satisfies CategoryUsageSummary,
+			];
+		})
+		.sort((left, right) => {
+			if (right.transactionCount !== left.transactionCount) {
+				return right.transactionCount - left.transactionCount;
+			}
+
+			const nameComparison = left.name.localeCompare(right.name);
+			if (nameComparison !== 0) {
+				return nameComparison;
+			}
+
+			return left.id.localeCompare(right.id);
+		});
+
+	return ranked[0] ?? null;
 }

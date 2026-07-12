@@ -792,4 +792,260 @@ describe('Category (integration)', () => {
 			]);
 		});
 	});
+
+	describe('getCategoriesSummary', () => {
+		const CREATE_TRANSACTION = /* GraphQL */ `
+			mutation CreateTransaction($data: CreateTransactionInput!) {
+				createTransaction(data: $data) {
+					id
+				}
+			}
+		`;
+
+		const GET_CATEGORIES_SUMMARY = /* GraphQL */ `
+			query GetCategoriesSummary {
+				getCategoriesSummary {
+					transactionCount
+					mostUsedCategory {
+						id
+						name
+						transactionCount
+					}
+				}
+			}
+		`;
+
+		function currentMonthDate(day: number): string {
+			const now = new Date();
+			return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), day)).toISOString();
+		}
+
+		function lastMonthDate(day: number): string {
+			const now = new Date();
+			return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, day)).toISOString();
+		}
+
+		async function createCategoryForUser(
+			name: string,
+			authOverrides?: Parameters<TestApp['authHeader']>[0],
+		) {
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader(authOverrides))
+				.send({
+					query: CREATE_CATEGORY,
+					variables: {
+						data: {
+							name,
+							icon: 'tag',
+							color: '#000000',
+						},
+					},
+				});
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeUndefined();
+
+			return response.body.data.createCategory.id as string;
+		}
+
+		async function createTransactionForUser(
+			categoryId: string,
+			data: {
+				amount: number;
+				type: string;
+				description: string;
+				date: string;
+			},
+			authOverrides?: Parameters<TestApp['authHeader']>[0],
+		) {
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader(authOverrides))
+				.send({
+					query: CREATE_TRANSACTION,
+					variables: { data: { ...data, categoryId } },
+				});
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeUndefined();
+		}
+
+		it('returns zero total and null most-used category for a new user', async () => {
+			await ctx.createUser();
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({ query: GET_CATEGORIES_SUMMARY });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeUndefined();
+			expect(response.body.data.getCategoriesSummary).toEqual({
+				transactionCount: 0,
+				mostUsedCategory: null,
+			});
+		});
+
+		it('counts all transaction types and months and picks the most-used category', async () => {
+			await ctx.createUser();
+			const foodId = await createCategoryForUser('Food');
+			const transportId = await createCategoryForUser('Transport');
+
+			await createTransactionForUser(foodId, {
+				amount: 50,
+				type: 'EXPENSE',
+				description: 'Groceries this month',
+				date: currentMonthDate(10),
+			});
+			await createTransactionForUser(foodId, {
+				amount: 30,
+				type: 'EXPENSE',
+				description: 'More groceries this month',
+				date: currentMonthDate(15),
+			});
+			await createTransactionForUser(foodId, {
+				amount: 100,
+				type: 'EXPENSE',
+				description: 'Groceries last month',
+				date: lastMonthDate(10),
+			});
+			await createTransactionForUser(foodId, {
+				amount: 200,
+				type: 'INCOME',
+				description: 'Refund',
+				date: currentMonthDate(12),
+			});
+			await createTransactionForUser(transportId, {
+				amount: 25,
+				type: 'EXPENSE',
+				description: 'Bus fare',
+				date: currentMonthDate(8),
+			});
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({ query: GET_CATEGORIES_SUMMARY });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeUndefined();
+			expect(response.body.data.getCategoriesSummary).toEqual({
+				transactionCount: 5,
+				mostUsedCategory: {
+					id: foodId,
+					name: 'Food',
+					transactionCount: 4,
+				},
+			});
+		});
+
+		it('breaks ties by category name ascending', async () => {
+			await ctx.createUser();
+			const alphaId = await createCategoryForUser('Alpha');
+			const betaId = await createCategoryForUser('Beta');
+
+			await createTransactionForUser(alphaId, {
+				amount: 10,
+				type: 'EXPENSE',
+				description: 'Alpha expense 1',
+				date: currentMonthDate(5),
+			});
+			await createTransactionForUser(alphaId, {
+				amount: 10,
+				type: 'EXPENSE',
+				description: 'Alpha expense 2',
+				date: currentMonthDate(6),
+			});
+			await createTransactionForUser(betaId, {
+				amount: 10,
+				type: 'EXPENSE',
+				description: 'Beta expense 1',
+				date: currentMonthDate(7),
+			});
+			await createTransactionForUser(betaId, {
+				amount: 10,
+				type: 'EXPENSE',
+				description: 'Beta expense 2',
+				date: currentMonthDate(8),
+			});
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader())
+				.send({ query: GET_CATEGORIES_SUMMARY });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeUndefined();
+			expect(response.body.data.getCategoriesSummary).toEqual({
+				transactionCount: 4,
+				mostUsedCategory: {
+					id: alphaId,
+					name: 'Alpha',
+					transactionCount: 2,
+				},
+			});
+		});
+
+		it('does not include another user transactions', async () => {
+			await ctx.createUser({ id: 'user-a', email: 'a@example.com' });
+			await ctx.createUser({ id: 'user-b', email: 'b@example.com' });
+
+			const categoryA = await createCategoryForUser('Food', {
+				id: 'user-a',
+				email: 'a@example.com',
+			});
+			const categoryB = await createCategoryForUser('Food', {
+				id: 'user-b',
+				email: 'b@example.com',
+			});
+
+			await createTransactionForUser(
+				categoryA,
+				{
+					amount: 40,
+					type: 'EXPENSE',
+					description: 'User A expense',
+					date: currentMonthDate(5),
+				},
+				{ id: 'user-a', email: 'a@example.com' },
+			);
+			await createTransactionForUser(
+				categoryB,
+				{
+					amount: 999,
+					type: 'EXPENSE',
+					description: 'User B expense',
+					date: currentMonthDate(5),
+				},
+				{ id: 'user-b', email: 'b@example.com' },
+			);
+
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', ctx.authHeader({ id: 'user-a', email: 'a@example.com' }))
+				.send({ query: GET_CATEGORIES_SUMMARY });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeUndefined();
+			expect(response.body.data.getCategoriesSummary).toEqual({
+				transactionCount: 1,
+				mostUsedCategory: {
+					id: categoryA,
+					name: 'Food',
+					transactionCount: 1,
+				},
+			});
+		});
+
+		it('rejects getCategoriesSummary when unauthenticated', async () => {
+			const response = await request(ctx.app)
+				.post('/graphql')
+				.send({ query: GET_CATEGORIES_SUMMARY });
+
+			expect(response.status).toBe(200);
+			expect(response.body.errors).toBeDefined();
+			expect(response.body.errors[0].extensions?.code).toBe(ERROR_CODES.UNAUTHENTICATED);
+		});
+	});
 });

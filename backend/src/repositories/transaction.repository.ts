@@ -1,5 +1,6 @@
 import type {
 	CategoryAggregation,
+	CategoryAggregationFilters,
 	DbTransactionClient,
 	TransactionCreateProps,
 	TransactionFindManyProps,
@@ -17,8 +18,7 @@ export interface TransactionRepository {
 	sumByType(userId: string, type: TransactionType, dateRange?: DateRange): Promise<number>;
 	groupByCategory(
 		userId: string,
-		dateRange: DateRange,
-		type: TransactionType,
+		filters?: CategoryAggregationFilters,
 	): Promise<CategoryAggregation[]>;
 	update(id: string, props: TransactionUpdateProps): Promise<TransactionWithCategory>;
 	delete(id: string): Promise<TransactionWithCategory>;
@@ -52,10 +52,9 @@ export class DbTransactionRepository implements TransactionRepository {
 
 	async groupByCategory(
 		userId: string,
-		dateRange: DateRange,
-		type: TransactionType,
+		filters?: CategoryAggregationFilters,
 	): Promise<CategoryAggregation[]> {
-		return this.dbTransactionClient.transaction.groupByCategory(userId, dateRange, type);
+		return this.dbTransactionClient.transaction.groupByCategory(userId, filters);
 	}
 
 	async update(id: string, props: TransactionUpdateProps): Promise<TransactionWithCategory> {
