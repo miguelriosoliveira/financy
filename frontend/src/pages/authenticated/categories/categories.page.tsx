@@ -1,11 +1,13 @@
-import { CombinedGraphQLErrors, gql } from '@apollo/client';
-import { useMutation } from '@apollo/client/react';
+import { CombinedGraphQLErrors, gql, type InternalRefetchQueryDescriptor } from '@apollo/client';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { ERROR_CODES, type UpdateCategoryInputType } from '@financy/shared';
 import { ArrowUpDownIcon, PlusIcon, TagIcon, UtensilsIcon } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { Button } from '@/components/button';
 import { type CategoryRow, GET_CATEGORIES, useCategories } from '@/hooks/use-categories';
+import { invalidateCategoryCache } from '@/lib/invalidate-category-cache';
+import { GET_CATEGORIES_SUMMARY } from './categories.queries';
 import { CategoryCard } from './components/category-card';
 import { CategoryFormDialog } from './components/category-form-dialog';
 import { CategoryHeaderCard } from './components/category-header-card';
@@ -55,6 +57,22 @@ function getGraphQLErrorCode(error: unknown): string | undefined {
 	return error.errors[0]?.extensions?.code as string | undefined;
 }
 
+type GetCategoriesSummaryResult = {
+	getCategoriesSummary: {
+		transactionCount: number;
+		mostUsedCategory: {
+			id: string;
+			name: string;
+			transactionCount: number;
+		} | null;
+	};
+};
+
+const CATEGORY_REFETCH_QUERIES = [
+	{ query: GET_CATEGORIES, variables: { includeStats: false } },
+	{ query: GET_CATEGORIES_SUMMARY },
+] satisfies InternalRefetchQueryDescriptor[];
+
 export function CategoriesPage() {
 	const [createOpen, setCreateOpen] = useState(false);
 	const [editOpen, setEditOpen] = useState(false);
@@ -64,16 +82,19 @@ export function CategoriesPage() {
 	const [createServerError, setCreateServerError] = useState<string>();
 	const [editServerError, setEditServerError] = useState<string>();
 	const { categories, loading: loadingCategories } = useCategories();
+	const { data: summaryData } = useQuery<GetCategoriesSummaryResult>(GET_CATEGORIES_SUMMARY);
 	const [createCategory, { loading: creatingCategory }] = useMutation(CREATE_CATEGORY);
 	const [editCategory, { loading: editingCategory }] = useMutation(EDIT_CATEGORY);
 	const [deleteCategory, { loading: deletingCategory }] = useMutation(DELETE_CATEGORY);
+	const summary = summaryData?.getCategoriesSummary;
 
 	function handleCreateCategory(data: UpdateCategoryInputType) {
 		setCreateServerError(undefined);
 		createCategory({
 			variables: { data },
-			refetchQueries: [{ query: GET_CATEGORIES, variables: { includeStats: false } }],
+			refetchQueries: CATEGORY_REFETCH_QUERIES,
 			awaitRefetchQueries: true,
+			update: cache => invalidateCategoryCache(cache),
 		})
 			.then(() => {
 				toast.success('Categoria criada com sucesso');
@@ -104,8 +125,9 @@ export function CategoriesPage() {
 		setEditServerError(undefined);
 		editCategory({
 			variables: { id: editingTarget.id, data },
-			refetchQueries: [{ query: GET_CATEGORIES, variables: { includeStats: false } }],
+			refetchQueries: CATEGORY_REFETCH_QUERIES,
 			awaitRefetchQueries: true,
+			update: cache => invalidateCategoryCache(cache),
 		})
 			.then(() => {
 				toast.success('Categoria editada com sucesso');
@@ -135,8 +157,9 @@ export function CategoriesPage() {
 
 		deleteCategory({
 			variables: { id: deletingTarget.id },
-			refetchQueries: [{ query: GET_CATEGORIES, variables: { includeStats: false } }],
+			refetchQueries: CATEGORY_REFETCH_QUERIES,
 			awaitRefetchQueries: true,
+			update: cache => invalidateCategoryCache(cache),
 		})
 			.then(() => {
 				toast.success('Categoria excluída com sucesso');
@@ -185,12 +208,12 @@ export function CategoriesPage() {
 				<CategoryHeaderCard
 					icon={<ArrowUpDownIcon className="text-purple-base" />}
 					title="Total de transações"
-					value="27"
+					value={String(summary?.transactionCount ?? 0)}
 				/>
 				<CategoryHeaderCard
 					icon={<UtensilsIcon className="text-blue-base" />}
 					title="Categoria mais utilizada"
-					value="Alimentação"
+					value={summary?.mostUsedCategory?.name ?? '—'}
 				/>
 			</div>
 

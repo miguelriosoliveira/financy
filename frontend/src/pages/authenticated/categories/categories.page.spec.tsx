@@ -1,3 +1,4 @@
+import { InMemoryCache } from '@apollo/client';
 import type { MockLink } from '@apollo/client/testing';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -5,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GET_CATEGORIES } from '@/hooks/use-categories';
 import { renderWithProviders } from '@/tests/helpers/render';
 import { CategoriesPage, CREATE_CATEGORY, DELETE_CATEGORY, EDIT_CATEGORY } from './categories.page';
+import { GET_CATEGORIES_SUMMARY } from './categories.queries';
 
 const mockToastSuccess = vi.fn();
 const mockToastError = vi.fn();
@@ -59,6 +61,49 @@ const UPDATED_CATEGORY = {
 	icon: 'food',
 	color: 'blue',
 };
+
+type CategoriesSummaryMock = {
+	transactionCount: number;
+	mostUsedCategory: {
+		id: string;
+		name: string;
+		transactionCount: number;
+	} | null;
+};
+
+const EMPTY_SUMMARY: CategoriesSummaryMock = {
+	transactionCount: 0,
+	mostUsedCategory: null,
+};
+
+const POPULATED_SUMMARY: CategoriesSummaryMock = {
+	transactionCount: 5,
+	mostUsedCategory: {
+		id: 'uuid-1',
+		name: 'Alimentação',
+		transactionCount: 3,
+	},
+};
+
+function getCategoriesSummaryMock(
+	summary: CategoriesSummaryMock = EMPTY_SUMMARY,
+): MockLink.MockedResponse {
+	return {
+		request: { query: GET_CATEGORIES_SUMMARY },
+		result: { data: { getCategoriesSummary: summary } },
+	};
+}
+
+function buildMocks(mocks: MockLink.MockedResponse[] = []) {
+	return [getCategoriesSummaryMock(), ...mocks];
+}
+
+function getHeaderCardContent(title: string) {
+	const label = screen.getByText(title);
+	const card = label.closest('[data-slot=card-content]');
+	expect(card).not.toBeNull();
+	return card as HTMLElement;
+}
 
 function getCategoriesMock(categories: CategoryMock[] = []): MockLink.MockedResponse {
 	return {
@@ -238,7 +283,7 @@ describe('CategoriesPage', () => {
 
 	it('renders the create trigger and form fields after opening the dialog', async () => {
 		renderWithProviders(<CategoriesPage />, {
-			mocks: [getCategoriesMock()],
+			mocks: buildMocks([getCategoriesMock()]),
 		});
 
 		expect(screen.getByRole('button', { name: 'Nova categoria' })).toBeInTheDocument();
@@ -269,7 +314,7 @@ describe('CategoriesPage', () => {
 		];
 
 		renderWithProviders(<CategoriesPage />, {
-			mocks: [getCategoriesMock(categories)],
+			mocks: [getCategoriesSummaryMock(POPULATED_SUMMARY), getCategoriesMock(categories)],
 		});
 
 		await waitFor(() => {
@@ -282,11 +327,26 @@ describe('CategoriesPage', () => {
 		const totalLabel = screen.getByText('Total de categorias');
 		const card = totalLabel.closest('[data-slot=card-content]');
 		expect(card).toHaveTextContent('2');
+		expect(getHeaderCardContent('Total de transações')).toHaveTextContent('5');
+		expect(getHeaderCardContent('Categoria mais utilizada')).toHaveTextContent('Alimentação');
+	});
+
+	it('shows zero transactions and an empty most-used placeholder when there are no transactions', async () => {
+		renderWithProviders(<CategoriesPage />, {
+			mocks: buildMocks([getCategoriesMock()]),
+		});
+
+		await waitFor(() => {
+			expect(screen.queryByText('Carregando categorias...')).not.toBeInTheDocument();
+		});
+
+		expect(getHeaderCardContent('Total de transações')).toHaveTextContent('0');
+		expect(getHeaderCardContent('Categoria mais utilizada')).toHaveTextContent('—');
 	});
 
 	it('shows the title validation message when submitting with an empty title', async () => {
 		renderWithProviders(<CategoriesPage />, {
-			mocks: [getCategoriesMock(), createCategorySuccessMock()],
+			mocks: buildMocks([getCategoriesMock(), createCategorySuccessMock()]),
 		});
 
 		const user = await openCreateCategoryDialog();
@@ -307,11 +367,12 @@ describe('CategoriesPage', () => {
 		};
 
 		renderWithProviders(<CategoriesPage />, {
-			mocks: [
+			mocks: buildMocks([
 				getCategoriesMock(),
 				createCategorySuccessMock(),
 				getCategoriesMock([createdCategory]),
-			],
+				getCategoriesSummaryMock(),
+			]),
 		});
 
 		const user = await openCreateCategoryDialog();
@@ -325,9 +386,51 @@ describe('CategoriesPage', () => {
 		expect(mockToastError).not.toHaveBeenCalled();
 	});
 
+	it('invalidates every cached category list after creating a category', async () => {
+		const cache = new InMemoryCache();
+		cache.writeQuery({
+			query: GET_CATEGORIES,
+			variables: { includeStats: true },
+			data: {
+				getCategories: [
+					{
+						...OTHER_CATEGORY,
+						transactionCount: 0,
+						totalAmount: 0,
+					},
+				],
+			},
+		});
+
+		renderWithProviders(<CategoriesPage />, {
+			cache,
+			mocks: buildMocks([
+				getCategoriesMock([OTHER_CATEGORY]),
+				createCategorySuccessMock(),
+				getCategoriesMock([OTHER_CATEGORY]),
+				getCategoriesSummaryMock(),
+			]),
+		});
+
+		const user = await openCreateCategoryDialog();
+		await user.type(screen.getByLabelText('Título'), VALID_CATEGORY.name);
+		await user.click(screen.getByRole('button', { name: 'Salvar' }));
+
+		await waitFor(() => {
+			expect(mockToastSuccess).toHaveBeenCalledWith('Categoria criada com sucesso');
+		});
+
+		expect(
+			cache.readQuery({
+				query: GET_CATEGORIES,
+				variables: { includeStats: true },
+			}),
+		).toBeNull();
+	});
+
 	it('shows a field error and toast when the category name already exists', async () => {
 		renderWithProviders(<CategoriesPage />, {
-			mocks: [getCategoriesMock(), createCategoryDuplicateMock()],
+			mocks: buildMocks([getCategoriesMock(), createCategoryDuplicateMock()]),
 		});
 
 		const user = await openCreateCategoryDialog();
@@ -345,7 +448,7 @@ describe('CategoriesPage', () => {
 
 	it('shows a generic error toast when category creation fails unexpectedly', async () => {
 		renderWithProviders(<CategoriesPage />, {
-			mocks: [getCategoriesMock(), createCategoryUnexpectedErrorMock()],
+			mocks: buildMocks([getCategoriesMock(), createCategoryUnexpectedErrorMock()]),
 		});
 
 		const user = await openCreateCategoryDialog();
@@ -362,7 +465,7 @@ describe('CategoriesPage', () => {
 
 	it('opens the edit dialog with prefilled values from the selected category', async () => {
 		renderWithProviders(<CategoriesPage />, {
-			mocks: [getCategoriesMock([EXISTING_CATEGORY])],
+			mocks: buildMocks([getCategoriesMock([EXISTING_CATEGORY])]),
 		});
 
 		await openEditCategoryDialog();
@@ -382,11 +485,12 @@ describe('CategoriesPage', () => {
 		};
 
 		renderWithProviders(<CategoriesPage />, {
-			mocks: [
+			mocks: buildMocks([
 				getCategoriesMock([EXISTING_CATEGORY]),
 				editCategorySuccessMock(),
 				getCategoriesMock([editedCategory]),
-			],
+				getCategoriesSummaryMock(),
+			]),
 		});
 
 		const user = await openEditCategoryDialog();
@@ -406,7 +510,7 @@ describe('CategoriesPage', () => {
 
 	it('shows a field error and toast when editing to an existing category name', async () => {
 		renderWithProviders(<CategoriesPage />, {
-			mocks: [getCategoriesMock([EXISTING_CATEGORY]), editCategoryDuplicateMock()],
+			mocks: buildMocks([getCategoriesMock([EXISTING_CATEGORY]), editCategoryDuplicateMock()]),
 		});
 
 		const user = await openEditCategoryDialog();
@@ -428,7 +532,7 @@ describe('CategoriesPage', () => {
 
 	it('opens the delete confirmation dialog when clicking the trash button', async () => {
 		renderWithProviders(<CategoriesPage />, {
-			mocks: [getCategoriesMock([EXISTING_CATEGORY])],
+			mocks: buildMocks([getCategoriesMock([EXISTING_CATEGORY])]),
 		});
 
 		await openDeleteCategoryDialog();
@@ -441,7 +545,7 @@ describe('CategoriesPage', () => {
 
 	it('closes the delete dialog without calling the mutation when cancelled', async () => {
 		renderWithProviders(<CategoriesPage />, {
-			mocks: [getCategoriesMock([EXISTING_CATEGORY])],
+			mocks: buildMocks([getCategoriesMock([EXISTING_CATEGORY])]),
 		});
 
 		const user = await openDeleteCategoryDialog();
@@ -460,11 +564,12 @@ describe('CategoriesPage', () => {
 
 	it('deletes a category successfully and removes it from the list', async () => {
 		renderWithProviders(<CategoriesPage />, {
-			mocks: [
+			mocks: buildMocks([
 				getCategoriesMock([EXISTING_CATEGORY, OTHER_CATEGORY]),
 				deleteCategorySuccessMock(),
 				getCategoriesMock([OTHER_CATEGORY]),
-			],
+				getCategoriesSummaryMock(),
+			]),
 		});
 
 		const user = await openDeleteCategoryDialog();
@@ -489,7 +594,10 @@ describe('CategoriesPage', () => {
 
 	it('shows a generic error toast when category deletion fails unexpectedly', async () => {
 		renderWithProviders(<CategoriesPage />, {
-			mocks: [getCategoriesMock([EXISTING_CATEGORY]), deleteCategoryUnexpectedErrorMock()],
+			mocks: buildMocks([
+				getCategoriesMock([EXISTING_CATEGORY]),
+				deleteCategoryUnexpectedErrorMock(),
+			]),
 		});
 
 		const user = await openDeleteCategoryDialog();

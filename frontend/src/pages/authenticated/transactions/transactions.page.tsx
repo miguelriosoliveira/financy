@@ -13,7 +13,7 @@ import {
 	useCreateTransaction,
 	useTransactions,
 } from '@/hooks/use-transactions';
-import { invalidateTransactionDerivedDashboardCache } from '@/lib/invalidate-transaction-derived-cache';
+import { invalidateTransactionDerivedCache } from '@/lib/invalidate-transaction-derived-cache';
 import { DeleteTransactionDialog } from './components/delete-transaction-dialog';
 import { TransactionFilters } from './components/transaction-filters';
 import { TransactionFormDialog } from './components/transaction-form-dialog';
@@ -82,6 +82,7 @@ export function TransactionsPage() {
 			},
 			refetchQueries: [{ query: GET_TRANSACTIONS, variables: { page, pageSize } }],
 			awaitRefetchQueries: true,
+			update: cache => invalidateTransactionDerivedCache(cache),
 		})
 			.then(() => {
 				toast.success('Transação criada com sucesso');
@@ -120,9 +121,7 @@ export function TransactionsPage() {
 			},
 			refetchQueries: [{ query: GET_TRANSACTIONS, variables: { page, pageSize } }],
 			awaitRefetchQueries: true,
-			update(cache) {
-				invalidateTransactionDerivedDashboardCache(cache);
-			},
+			update: cache => invalidateTransactionDerivedCache(cache),
 		})
 			.then(() => {
 				toast.success('Transação editada com sucesso');
@@ -154,6 +153,7 @@ export function TransactionsPage() {
 			variables: { id: deletingTarget.id },
 			refetchQueries: [{ query: GET_TRANSACTIONS, variables: { page, pageSize } }],
 			awaitRefetchQueries: true,
+			update: cache => invalidateTransactionDerivedCache(cache),
 		})
 			.then(async () => {
 				const cached = client.readQuery<{

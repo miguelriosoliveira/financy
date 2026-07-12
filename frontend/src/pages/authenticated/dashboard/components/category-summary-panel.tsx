@@ -7,7 +7,7 @@ import type { CategoryRow } from '@/hooks/use-categories';
 import { formatCurrency } from '@/lib/format-currency';
 import { cn } from '@/lib/utils';
 
-const CATEGORY_SUMMARY_MAX_BODY_HEIGHT = 'max-h-84';
+const CATEGORY_SUMMARY_MAX_BODY_HEIGHT = 'max-h-118';
 
 function formatTransactionCount(count: number) {
 	return `${count} ${count === 1 ? 'item' : 'itens'}`;

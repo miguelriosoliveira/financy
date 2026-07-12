@@ -9,7 +9,7 @@ import {
 	GET_TRANSACTIONS,
 	type TransactionRow,
 } from '@/hooks/use-transactions';
-import { invalidateTransactionDerivedDashboardCache } from '@/lib/invalidate-transaction-derived-cache';
+import { invalidateTransactionDerivedCache } from '@/lib/invalidate-transaction-derived-cache';
 import { renderWithProviders } from '@/tests/helpers/render';
 import { DELETE_TRANSACTION, EDIT_TRANSACTION, TransactionsPage } from './transactions.page';
 
@@ -18,9 +18,7 @@ vi.mock('@/lib/invalidate-transaction-derived-cache', async importOriginal => {
 		await importOriginal<typeof import('@/lib/invalidate-transaction-derived-cache')>();
 	return {
 		...actual,
-		invalidateTransactionDerivedDashboardCache: vi.fn(
-			actual.invalidateTransactionDerivedDashboardCache,
-		),
+		invalidateTransactionDerivedCache: vi.fn(actual.invalidateTransactionDerivedCache),
 	};
 });
 
@@ -581,7 +579,7 @@ describe('TransactionsPage', () => {
 		});
 
 		expect(mockToastError).not.toHaveBeenCalled();
-		expect(invalidateTransactionDerivedDashboardCache).toHaveBeenCalledTimes(1);
+		expect(invalidateTransactionDerivedCache).toHaveBeenCalledTimes(1);
 	});
 
 	it('shows a field error and toast when the transaction is not found', async () => {

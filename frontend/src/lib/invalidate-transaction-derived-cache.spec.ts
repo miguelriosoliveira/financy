@@ -2,8 +2,9 @@ import { InMemoryCache } from '@apollo/client';
 import { describe, expect, it } from 'vitest';
 import { GET_CATEGORIES } from '@/hooks/use-categories';
 import { DEFAULT_TRANSACTION_PAGE_SIZE, GET_TRANSACTIONS } from '@/hooks/use-transactions';
+import { GET_CATEGORIES_SUMMARY } from '@/pages/authenticated/categories/categories.queries';
 import { GET_DASHBOARD_SUMMARY } from '@/pages/authenticated/dashboard/dashboard.queries';
-import { invalidateTransactionDerivedDashboardCache } from './invalidate-transaction-derived-cache';
+import { invalidateTransactionDerivedCache } from './invalidate-transaction-derived-cache';
 
 const RECENT_TRANSACTIONS_PAGE_SIZE = 5;
 
@@ -17,6 +18,20 @@ function createSeededCache() {
 				totalBalance: 1000,
 				monthlyIncome: 500,
 				monthlyExpenses: 200,
+			},
+		},
+	});
+
+	cache.writeQuery({
+		query: GET_CATEGORIES_SUMMARY,
+		data: {
+			getCategoriesSummary: {
+				transactionCount: 5,
+				mostUsedCategory: {
+					id: 'category-1',
+					name: 'Alimentação',
+					transactionCount: 3,
+				},
 			},
 		},
 	});
@@ -84,13 +99,14 @@ function createSeededCache() {
 	return cache;
 }
 
-describe('invalidateTransactionDerivedDashboardCache', () => {
-	it('evicts dashboard summary, stats categories, and all transaction list caches', () => {
+describe('invalidateTransactionDerivedCache', () => {
+	it('evicts dashboard summary, categories summary, stats categories, and all transaction list caches', () => {
 		const cache = createSeededCache();
 
-		invalidateTransactionDerivedDashboardCache(cache);
+		invalidateTransactionDerivedCache(cache);
 
 		expect(cache.readQuery({ query: GET_DASHBOARD_SUMMARY })).toBeNull();
+		expect(cache.readQuery({ query: GET_CATEGORIES_SUMMARY })).toBeNull();
 		expect(
 			cache.readQuery({
 				query: GET_CATEGORIES,
@@ -114,7 +130,7 @@ describe('invalidateTransactionDerivedDashboardCache', () => {
 	it('keeps non-stats category queries in the cache', () => {
 		const cache = createSeededCache();
 
-		invalidateTransactionDerivedDashboardCache(cache);
+		invalidateTransactionDerivedCache(cache);
 
 		expect(
 			cache.readQuery({

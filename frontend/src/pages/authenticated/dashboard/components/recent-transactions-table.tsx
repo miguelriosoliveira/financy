@@ -11,6 +11,7 @@ import { Tag } from '@/components/tag';
 import { GET_CATEGORIES } from '@/hooks/use-categories';
 import { GET_TRANSACTIONS, useCreateTransaction, useTransactions } from '@/hooks/use-transactions';
 import { formatSignedAmount } from '@/lib/format-currency';
+import { invalidateTransactionDerivedCache } from '@/lib/invalidate-transaction-derived-cache';
 import { cn } from '@/lib/utils';
 import { CategoryIcon } from '@/pages/authenticated/categories/components/category-icon';
 import { TransactionFormDialog } from '@/pages/authenticated/transactions/components/transaction-form-dialog';
@@ -72,6 +73,7 @@ export function RecentTransactionsTable({
 				{ query: GET_CATEGORIES, variables: { includeStats: true } },
 			],
 			awaitRefetchQueries: true,
+			update: cache => invalidateTransactionDerivedCache(cache),
 		})
 			.then(() => {
 				toast.success('Transação criada com sucesso');
