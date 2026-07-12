@@ -3,10 +3,11 @@ import { useApolloClient, useMutation } from '@apollo/client/react';
 import { type CreateTransactionInputType, ERROR_CODES } from '@financy/shared';
 import { parseISO } from 'date-fns';
 import { PlusIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { Button } from '@/components/button';
 import { useCategories } from '@/hooks/use-categories';
+import { GET_TRANSACTION_PERIODS, useTransactionPeriods } from '@/hooks/use-transaction-periods';
 import {
 	GET_TRANSACTIONS,
 	type TransactionRow,
@@ -18,6 +19,13 @@ import { DeleteTransactionDialog } from './components/delete-transaction-dialog'
 import { TransactionFilters } from './components/transaction-filters';
 import { TransactionFormDialog } from './components/transaction-form-dialog';
 import { TransactionTable } from './components/transaction-table';
+import {
+	DEFAULT_TRANSACTION_FILTERS,
+	hasActiveTransactionFilterState,
+	shouldClearSelectedPeriod,
+	type TransactionFiltersState,
+	toGraphqlFilters,
+} from './transaction-filters.state';
 
 export const EDIT_TRANSACTION = gql`
 	mutation EditTransaction($id: ID!, $data: UpdateTransactionInput!) {
@@ -63,13 +71,41 @@ export function TransactionsPage() {
 	const [createServerError, setCreateServerError] = useState<string>();
 	const [editServerError, setEditServerError] = useState<string>();
 	const [page, setPage] = useState(1);
+	const [filters, setFilters] = useState<TransactionFiltersState>(DEFAULT_TRANSACTION_FILTERS);
+	const graphqlFilters = toGraphqlFilters(filters);
 	const { categories } = useCategories();
-	const { transactions, totalCount, pageSize, loading } = useTransactions({ page });
+	const { periods, loading: periodsLoading } = useTransactionPeriods();
+	const { transactions, totalCount, pageSize, loading, queryVariables } = useTransactions({
+		page,
+		filters: graphqlFilters,
+	});
 	const [createTransaction, { loading: creatingTransaction }] = useCreateTransaction();
 	const [editTransaction, { loading: editingTransaction }] = useMutation(EDIT_TRANSACTION);
 	const [deleteTransaction, { loading: deletingTransaction }] = useMutation(DELETE_TRANSACTION);
 
 	const categoryOptions = categories.map(category => ({ id: category.id, name: category.name }));
+	const hasActiveFilters = hasActiveTransactionFilterState(filters);
+
+	useEffect(() => {
+		if (!shouldClearSelectedPeriod(periods, filters.period, periodsLoading)) {
+			return;
+		}
+
+		setFilters(current => ({ ...current, period: 'all' }));
+		setPage(1);
+	}, [filters.period, periods, periodsLoading]);
+
+	function handleFiltersChange(nextFilters: TransactionFiltersState) {
+		setFilters(nextFilters);
+		setPage(1);
+	}
+
+	function getMutationRefetchQueries() {
+		return [
+			{ query: GET_TRANSACTIONS, variables: queryVariables },
+			{ query: GET_TRANSACTION_PERIODS },
+		];
+	}
 
 	function handleCreateTransaction(data: CreateTransactionInputType) {
 		setCreateServerError(undefined);
@@ -80,7 +116,7 @@ export function TransactionsPage() {
 					date: data.date.toISOString(),
 				},
 			},
-			refetchQueries: [{ query: GET_TRANSACTIONS, variables: { page, pageSize } }],
+			refetchQueries: getMutationRefetchQueries(),
 			awaitRefetchQueries: true,
 			update: cache => invalidateTransactionDerivedCache(cache),
 		})
@@ -119,7 +155,7 @@ export function TransactionsPage() {
 					date: data.date.toISOString(),
 				},
 			},
-			refetchQueries: [{ query: GET_TRANSACTIONS, variables: { page, pageSize } }],
+			refetchQueries: getMutationRefetchQueries(),
 			awaitRefetchQueries: true,
 			update: cache => invalidateTransactionDerivedCache(cache),
 		})
@@ -151,7 +187,7 @@ export function TransactionsPage() {
 
 		deleteTransaction({
 			variables: { id: deletingTarget.id },
-			refetchQueries: [{ query: GET_TRANSACTIONS, variables: { page, pageSize } }],
+			refetchQueries: getMutationRefetchQueries(),
 			awaitRefetchQueries: true,
 			update: cache => invalidateTransactionDerivedCache(cache),
 		})
@@ -160,7 +196,7 @@ export function TransactionsPage() {
 					getTransactions: { totalCount: number };
 				}>({
 					query: GET_TRANSACTIONS,
-					variables: { page, pageSize },
+					variables: queryVariables,
 				});
 
 				let targetPage = page;
@@ -175,7 +211,7 @@ export function TransactionsPage() {
 				if (targetPage !== page) {
 					await client.query({
 						query: GET_TRANSACTIONS,
-						variables: { page: targetPage, pageSize },
+						variables: { ...queryVariables, page: targetPage },
 						fetchPolicy: 'network-only',
 					});
 					setPage(targetPage);
@@ -221,13 +257,20 @@ export function TransactionsPage() {
 				/>
 			</div>
 
-			<TransactionFilters />
+			<TransactionFilters
+				value={filters}
+				onChange={handleFiltersChange}
+				categories={categoryOptions}
+				periods={periods}
+				periodsLoading={periodsLoading}
+			/>
 			<TransactionTable
 				transactions={transactions}
 				totalCount={totalCount}
 				page={page}
 				pageSize={pageSize}
 				loading={loading}
+				hasActiveFilters={hasActiveFilters}
 				onPageChange={setPage}
 				onEdit={handleEditTransaction}
 				onDelete={handleDeleteTransaction}

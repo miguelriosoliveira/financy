@@ -1,13 +1,18 @@
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
+import type { ListTransactionFiltersInputType } from '@financy/shared';
 import type { TagColor } from '@/components/tag';
+import {
+	buildGetTransactionsVariables,
+	type GetTransactionsVariables,
+} from '@/lib/transaction-query-variables';
 import type { CategoryType } from '@/pages/authenticated/categories/components/category-icon';
 
 export const DEFAULT_TRANSACTION_PAGE_SIZE = 10;
 
 export const GET_TRANSACTIONS = gql`
-	query GetTransactions($page: Int!, $pageSize: Int!) {
-		getTransactions(page: $page, pageSize: $pageSize) {
+	query GetTransactions($page: Int!, $pageSize: Int!, $filters: ListTransactionsFiltersInput) {
+		getTransactions(page: $page, pageSize: $pageSize, filters: $filters) {
 			items {
 				id
 				amount
@@ -70,15 +75,16 @@ export type GetTransactionsResult = {
 type UseTransactionsOptions = {
 	page: number;
 	pageSize?: number;
+	filters?: ListTransactionFiltersInputType;
 };
 
 export function useTransactions({
 	page,
 	pageSize = DEFAULT_TRANSACTION_PAGE_SIZE,
+	filters,
 }: UseTransactionsOptions) {
-	const { data, loading } = useQuery<GetTransactionsResult>(GET_TRANSACTIONS, {
-		variables: { page, pageSize },
-	});
+	const variables = buildGetTransactionsVariables(page, pageSize, filters);
+	const { data, loading } = useQuery<GetTransactionsResult>(GET_TRANSACTIONS, { variables });
 
 	return {
 		transactions: data?.getTransactions.items ?? [],
@@ -86,9 +92,12 @@ export function useTransactions({
 		page: data?.getTransactions.page ?? page,
 		pageSize: data?.getTransactions.pageSize ?? pageSize,
 		loading,
+		queryVariables: variables,
 	};
 }
 
 export function useCreateTransaction() {
 	return useMutation(CREATE_TRANSACTION);
 }
+
+export type { GetTransactionsVariables };

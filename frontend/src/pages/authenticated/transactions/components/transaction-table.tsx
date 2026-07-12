@@ -16,6 +16,7 @@ type TransactionTableProps = {
 	page: number;
 	pageSize: number;
 	loading: boolean;
+	hasActiveFilters?: boolean;
 	onPageChange: (page: number) => void;
 	onEdit: (transaction: TransactionRow) => void;
 	onDelete: (transaction: TransactionRow) => void;
@@ -42,6 +43,7 @@ export function TransactionTable({
 	page,
 	pageSize,
 	loading,
+	hasActiveFilters = false,
 	onPageChange,
 	onEdit,
 	onDelete,
@@ -56,7 +58,11 @@ export function TransactionTable({
 	}
 
 	if (transactions.length === 0) {
-		return <p className="font-light text-gray-600">Nenhuma transação ainda</p>;
+		return (
+			<p className="font-light text-gray-600" data-testid="transaction-empty-state">
+				{hasActiveFilters ? 'Nenhum resultado encontrado' : 'Nenhuma transação ainda'}
+			</p>
+		);
 	}
 
 	return (

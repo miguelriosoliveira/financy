@@ -3,6 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GET_CATEGORIES } from '@/hooks/use-categories';
+import { GET_TRANSACTION_PERIODS } from '@/hooks/use-transaction-periods';
 import {
 	CREATE_TRANSACTION,
 	DEFAULT_TRANSACTION_PAGE_SIZE,
@@ -147,6 +148,23 @@ const EDIT_MUTATION_VARIABLES = {
 	},
 };
 
+function buildPageMocks(
+	mocks: MockLink.MockedResponse[],
+	categories: (typeof EXISTING_CATEGORY)[] = [EXISTING_CATEGORY],
+	periods: Array<{ year: number; month: number }> = [{ year: 2025, month: 11 }],
+) {
+	return [getCategoriesMock(categories), getTransactionPeriodsMock(periods), ...mocks];
+}
+
+function getTransactionPeriodsMock(
+	periods: Array<{ year: number; month: number }> = [{ year: 2025, month: 11 }],
+): MockLink.MockedResponse {
+	return {
+		request: { query: GET_TRANSACTION_PERIODS },
+		result: { data: { getTransactionPeriods: periods } },
+	};
+}
+
 function getCategoriesMock(categories: (typeof EXISTING_CATEGORY)[] = []): MockLink.MockedResponse {
 	return {
 		request: { query: GET_CATEGORIES, variables: { includeStats: false } },
@@ -165,18 +183,27 @@ function getCategoriesMock(categories: (typeof EXISTING_CATEGORY)[] = []): MockL
 function getTransactionsMock({
 	page = 1,
 	pageSize = DEFAULT_TRANSACTION_PAGE_SIZE,
+	filters,
 	items = [SAMPLE_TRANSACTION],
 	totalCount = items.length,
 }: {
 	page?: number;
 	pageSize?: number;
+	filters?: {
+		search?: string;
+		type?: 'INCOME' | 'EXPENSE';
+		categoryId?: string;
+		period?: { year: number; month: number };
+	};
 	items?: TransactionRow[];
 	totalCount?: number;
 } = {}): MockLink.MockedResponse {
+	const variables = filters ? { page, pageSize, filters } : { page, pageSize };
+
 	return {
 		request: {
 			query: GET_TRANSACTIONS,
-			variables: { page, pageSize },
+			variables,
 		},
 		result: {
 			data: {
@@ -340,10 +367,7 @@ describe('TransactionsPage', () => {
 
 	it('renders the create trigger and opens the dialog', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [
-				getCategoriesMock([EXISTING_CATEGORY]),
-				getTransactionsMock({ items: [], totalCount: 0 }),
-			],
+			mocks: buildPageMocks([getTransactionsMock({ items: [], totalCount: 0 })]),
 		});
 
 		expect(screen.getByRole('button', { name: 'Nova transação' })).toBeInTheDocument();
@@ -357,10 +381,7 @@ describe('TransactionsPage', () => {
 
 	it('shows loading then empty state when there are no transactions', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [
-				getCategoriesMock([EXISTING_CATEGORY]),
-				getTransactionsMock({ items: [], totalCount: 0 }),
-			],
+			mocks: buildPageMocks([getTransactionsMock({ items: [], totalCount: 0 })]),
 		});
 
 		expect(screen.getByText('Carregando transações...')).toBeInTheDocument();
@@ -372,10 +393,7 @@ describe('TransactionsPage', () => {
 
 	it('renders transactions from the query with formatted values', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [
-				getCategoriesMock([EXISTING_CATEGORY]),
-				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
-			],
+			mocks: buildPageMocks([getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 })]),
 		});
 
 		await waitFor(() => {
@@ -390,13 +408,12 @@ describe('TransactionsPage', () => {
 
 	it('shows the pagination summary and page buttons from totalCount', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [
-				getCategoriesMock([EXISTING_CATEGORY]),
+			mocks: buildPageMocks([
 				getTransactionsMock({
 					items: createPaginatedTransactions(DEFAULT_TRANSACTION_PAGE_SIZE, 27, 1),
 					totalCount: 27,
 				}),
-			],
+			]),
 		});
 
 		await waitFor(() => {
@@ -417,8 +434,7 @@ describe('TransactionsPage', () => {
 
 	it('loads the next page when a page button is clicked', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [
-				getCategoriesMock([EXISTING_CATEGORY]),
+			mocks: buildPageMocks([
 				getTransactionsMock({
 					items: createPaginatedTransactions(DEFAULT_TRANSACTION_PAGE_SIZE, 27, 1),
 					totalCount: 27,
@@ -428,7 +444,7 @@ describe('TransactionsPage', () => {
 					items: [PAGE_TWO_TRANSACTION],
 					totalCount: 27,
 				}),
-			],
+			]),
 		});
 
 		await waitFor(() => {
@@ -450,12 +466,12 @@ describe('TransactionsPage', () => {
 
 	it('creates a transaction successfully and refetches the list', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [
-				getCategoriesMock([EXISTING_CATEGORY]),
+			mocks: buildPageMocks([
 				getTransactionsMock({ items: [], totalCount: 0 }),
 				createTransactionSuccessMock(),
 				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
-			],
+				getTransactionPeriodsMock(),
+			]),
 		});
 
 		await waitFor(() => {
@@ -479,11 +495,10 @@ describe('TransactionsPage', () => {
 
 	it('shows a field error and toast when the category is not found', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [
-				getCategoriesMock([EXISTING_CATEGORY]),
+			mocks: buildPageMocks([
 				getTransactionsMock({ items: [], totalCount: 0 }),
 				createTransactionCategoryNotFoundMock(),
-			],
+			]),
 		});
 
 		await waitFor(() => {
@@ -503,11 +518,10 @@ describe('TransactionsPage', () => {
 
 	it('shows a generic error toast when transaction creation fails unexpectedly', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [
-				getCategoriesMock([EXISTING_CATEGORY]),
+			mocks: buildPageMocks([
 				getTransactionsMock({ items: [], totalCount: 0 }),
 				createTransactionUnexpectedErrorMock(),
-			],
+			]),
 		});
 
 		await waitFor(() => {
@@ -527,10 +541,7 @@ describe('TransactionsPage', () => {
 
 	it('opens the edit dialog when the edit button is clicked', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [
-				getCategoriesMock([EXISTING_CATEGORY]),
-				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
-			],
+			mocks: buildPageMocks([getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 })]),
 		});
 
 		await waitFor(() => {
@@ -554,12 +565,12 @@ describe('TransactionsPage', () => {
 		};
 
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [
-				getCategoriesMock([EXISTING_CATEGORY]),
+			mocks: buildPageMocks([
 				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
 				editTransactionSuccessMock(),
 				getTransactionsMock({ items: [updatedTransaction], totalCount: 1 }),
-			],
+				getTransactionPeriodsMock(),
+			]),
 		});
 
 		await waitFor(() => {
@@ -584,11 +595,10 @@ describe('TransactionsPage', () => {
 
 	it('shows a field error and toast when the transaction is not found', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [
-				getCategoriesMock([EXISTING_CATEGORY]),
+			mocks: buildPageMocks([
 				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
 				editTransactionNotFoundMock(),
-			],
+			]),
 		});
 
 		await waitFor(() => {
@@ -608,11 +618,10 @@ describe('TransactionsPage', () => {
 
 	it('shows a generic error toast when transaction edit fails unexpectedly', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [
-				getCategoriesMock([EXISTING_CATEGORY]),
+			mocks: buildPageMocks([
 				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
 				editTransactionUnexpectedErrorMock(),
-			],
+			]),
 		});
 
 		await waitFor(() => {
@@ -632,10 +641,7 @@ describe('TransactionsPage', () => {
 
 	it('opens the delete confirmation dialog when clicking the trash button', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [
-				getCategoriesMock([EXISTING_CATEGORY]),
-				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
-			],
+			mocks: buildPageMocks([getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 })]),
 		});
 
 		await openDeleteTransactionDialog();
@@ -647,10 +653,7 @@ describe('TransactionsPage', () => {
 
 	it('closes the delete dialog without calling the mutation when cancelled', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [
-				getCategoriesMock([EXISTING_CATEGORY]),
-				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
-			],
+			mocks: buildPageMocks([getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 })]),
 		});
 
 		const user = await openDeleteTransactionDialog();
@@ -666,12 +669,12 @@ describe('TransactionsPage', () => {
 
 	it('deletes a transaction successfully and removes it from the list', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [
-				getCategoriesMock([EXISTING_CATEGORY]),
+			mocks: buildPageMocks([
 				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
 				deleteTransactionSuccessMock(),
 				getTransactionsMock({ items: [], totalCount: 0 }),
-			],
+				getTransactionPeriodsMock(),
+			]),
 		});
 
 		const user = await openDeleteTransactionDialog();
@@ -700,8 +703,7 @@ describe('TransactionsPage', () => {
 		};
 
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [
-				getCategoriesMock([EXISTING_CATEGORY]),
+			mocks: buildPageMocks([
 				getTransactionsMock({
 					items: createPaginatedTransactions(DEFAULT_TRANSACTION_PAGE_SIZE, 11, 1),
 					totalCount: 11,
@@ -717,11 +719,12 @@ describe('TransactionsPage', () => {
 					items: [],
 					totalCount: 10,
 				}),
+				getTransactionPeriodsMock(),
 				getTransactionsMock({
 					items: createPaginatedTransactions(DEFAULT_TRANSACTION_PAGE_SIZE, 10, 1),
 					totalCount: 10,
 				}),
-			],
+			]),
 		});
 
 		await waitFor(() => {
@@ -764,11 +767,10 @@ describe('TransactionsPage', () => {
 
 	it('shows a generic error toast when transaction delete fails unexpectedly', async () => {
 		renderWithProviders(<TransactionsPage />, {
-			mocks: [
-				getCategoriesMock([EXISTING_CATEGORY]),
+			mocks: buildPageMocks([
 				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
 				deleteTransactionUnexpectedErrorMock(),
-			],
+			]),
 		});
 
 		const user = await openDeleteTransactionDialog();
@@ -781,5 +783,98 @@ describe('TransactionsPage', () => {
 
 		expect(mockToastSuccess).not.toHaveBeenCalled();
 		expect(screen.getByText('Jantar no Restaurante')).toBeInTheDocument();
+	});
+
+	it('requests filtered transactions when a type filter is selected', async () => {
+		renderWithProviders(<TransactionsPage />, {
+			mocks: buildPageMocks([
+				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
+				getTransactionsMock({
+					filters: { type: 'EXPENSE' },
+					items: [SAMPLE_TRANSACTION],
+					totalCount: 1,
+				}),
+			]),
+		});
+
+		await waitFor(() => {
+			expect(screen.getByText('Jantar no Restaurante')).toBeInTheDocument();
+		});
+
+		const user = userEvent.setup();
+		await user.click(screen.getByLabelText('Tipo'));
+		await user.click(screen.getByRole('option', { name: 'Saída' }));
+
+		await waitFor(() => {
+			expect(screen.getByText('Jantar no Restaurante')).toBeInTheDocument();
+		});
+	});
+
+	it('resets pagination when filters change', async () => {
+		renderWithProviders(<TransactionsPage />, {
+			mocks: buildPageMocks([
+				getTransactionsMock({
+					items: createPaginatedTransactions(DEFAULT_TRANSACTION_PAGE_SIZE, 27, 1),
+					totalCount: 27,
+				}),
+				getTransactionsMock({
+					page: 2,
+					items: [PAGE_TWO_TRANSACTION],
+					totalCount: 27,
+				}),
+				getTransactionsMock({
+					filters: { type: 'EXPENSE' },
+					items: [SAMPLE_TRANSACTION],
+					totalCount: 1,
+				}),
+			]),
+		});
+
+		await waitFor(() => {
+			expect(screen.getByText('Transação 1')).toBeInTheDocument();
+		});
+
+		const user = userEvent.setup();
+		await user.click(screen.getByRole('button', { name: 'Página 2' }));
+
+		await waitFor(() => {
+			expect(screen.getByText('Transação página 2')).toBeInTheDocument();
+		});
+
+		await user.click(screen.getByLabelText('Tipo'));
+		await user.click(screen.getByRole('option', { name: 'Saída' }));
+
+		await waitFor(() => {
+			expect(screen.getByTestId('transaction-pagination-summary')).toHaveTextContent(
+				'1 a 1 | 1 resultados',
+			);
+		});
+	});
+
+	it('shows filtered empty state when no transactions match', async () => {
+		renderWithProviders(<TransactionsPage />, {
+			mocks: buildPageMocks([
+				getTransactionsMock({ items: [SAMPLE_TRANSACTION], totalCount: 1 }),
+				getTransactionsMock({
+					filters: { type: 'INCOME' },
+					items: [],
+					totalCount: 0,
+				}),
+			]),
+		});
+
+		await waitFor(() => {
+			expect(screen.getByText('Jantar no Restaurante')).toBeInTheDocument();
+		});
+
+		const user = userEvent.setup();
+		await user.click(screen.getByLabelText('Tipo'));
+		await user.click(screen.getByRole('option', { name: 'Entrada' }));
+
+		await waitFor(() => {
+			expect(screen.getByTestId('transaction-empty-state')).toHaveTextContent(
+				'Nenhum resultado encontrado',
+			);
+		});
 	});
 });
