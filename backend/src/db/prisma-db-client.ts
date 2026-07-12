@@ -16,11 +16,30 @@ import type {
 	DbTransactionClient,
 	TransactionCreateProps,
 	TransactionFindManyProps,
+	TransactionListFilters,
+	TransactionPeriod,
 	TransactionUpdateProps,
 	TransactionWithCategory,
 } from './db-transaction-client.interface.ts';
 import type { DbUserClient, UserCreateProps, UserUpdateProps } from './db-user-client.interface.ts';
 import { PrismaClient } from './prisma/generated/client.ts';
+
+function buildTransactionListWhere(userId: string, filters?: TransactionListFilters) {
+	return {
+		userId,
+		...(filters?.type ? { type: filters.type } : {}),
+		...(filters?.categoryId ? { categoryId: filters.categoryId } : {}),
+		...(filters?.dateRange
+			? {
+					date: {
+						gte: filters.dateRange.start,
+						lt: filters.dateRange.end,
+					},
+				}
+			: {}),
+		...(filters?.search ? { description: { contains: filters.search } } : {}),
+	};
+}
 
 export class PrismaDbClient
 	implements DbClient, DbUserClient, DbCategoryClient, DbTransactionClient
@@ -104,10 +123,10 @@ export class PrismaDbClient
 
 		findMany: async (
 			userId: string,
-			{ skip, take }: TransactionFindManyProps,
+			{ skip, take, filters }: TransactionFindManyProps,
 		): Promise<TransactionWithCategory[]> => {
 			const transactions = await this.client.transaction.findMany({
-				where: { userId },
+				where: buildTransactionListWhere(userId, filters),
 				skip,
 				take,
 				orderBy: [{ date: 'desc' }, { category: { name: 'asc' } }, { id: 'desc' }],
@@ -119,8 +138,26 @@ export class PrismaDbClient
 			}));
 		},
 
-		count: (userId: string): Promise<number> =>
-			this.client.transaction.count({ where: { userId } }),
+		count: (userId: string, filters?: TransactionListFilters): Promise<number> =>
+			this.client.transaction.count({ where: buildTransactionListWhere(userId, filters) }),
+
+		findDistinctPeriods: async (userId: string): Promise<TransactionPeriod[]> => {
+			const rows = await this.client.$queryRaw<
+				Array<{ year: bigint | number; month: bigint | number }>
+			>`
+				SELECT
+					CAST(strftime('%Y', date) AS INTEGER) AS year,
+					CAST(strftime('%m', date) AS INTEGER) AS month
+				FROM "Transaction"
+				WHERE "userId" = ${userId}
+				GROUP BY year, month
+				ORDER BY year DESC, month DESC
+			`;
+			return rows.map(row => ({
+				year: Number(row.year),
+				month: Number(row.month),
+			}));
+		},
 
 		sumByType: async (
 			userId: string,

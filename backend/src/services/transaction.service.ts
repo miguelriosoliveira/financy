@@ -1,13 +1,20 @@
+import type { ListTransactionFiltersInputType } from '@financy/shared';
 import { ERROR_CODES } from '@financy/shared';
 import { GraphQLError } from 'graphql';
-import type { TransactionWithCategory } from '../db/db-transaction-client.interface.ts';
+import type {
+	TransactionListFilters,
+	TransactionWithCategory,
+} from '../db/db-transaction-client.interface.ts';
 import type {
 	CreateTransactionInput,
 	UpdateTransactionInput,
 } from '../dtos/input/transaction.input.ts';
+import type { TransactionPeriodOutput } from '../dtos/output/transaction-period.output.ts';
 import type { TransactionPage } from '../models/transaction-page.model.ts';
+import type { TransactionType } from '../models/transaction-type.ts';
 import type { CategoryRepository } from '../repositories/category.repository.ts';
 import type { TransactionRepository } from '../repositories/transaction.repository.ts';
+import { getMonthRange } from '../utils/date-range.ts';
 
 export class TransactionService {
 	constructor(
@@ -77,14 +84,46 @@ export class TransactionService {
 
 	async findPage(
 		userId: string,
-		{ page, pageSize }: { page: number; pageSize: number },
+		{
+			page,
+			pageSize,
+			filters,
+		}: { page: number; pageSize: number; filters?: ListTransactionFiltersInputType },
 	): Promise<TransactionPage> {
+		const resolvedFilters = resolveTransactionListFilters(filters);
 		const skip = (page - 1) * pageSize;
 		const [items, totalCount] = await Promise.all([
-			this.transactionRepository.findMany(userId, { skip, take: pageSize }),
-			this.transactionRepository.count(userId),
+			this.transactionRepository.findMany(userId, {
+				skip,
+				take: pageSize,
+				filters: resolvedFilters,
+			}),
+			this.transactionRepository.count(userId, resolvedFilters),
 		]);
 
 		return { items, totalCount, page, pageSize };
 	}
+
+	async findDistinctPeriods(userId: string): Promise<TransactionPeriodOutput[]> {
+		return this.transactionRepository.findDistinctPeriods(userId);
+	}
+}
+
+function resolveTransactionListFilters(
+	filters?: ListTransactionFiltersInputType,
+): TransactionListFilters | undefined {
+	if (!filters) {
+		return undefined;
+	}
+
+	const resolved: TransactionListFilters = {
+		...(filters.search ? { search: filters.search } : {}),
+		...(filters.type ? { type: filters.type as TransactionType } : {}),
+		...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
+		...(filters.period
+			? { dateRange: getMonthRange(filters.period.year, filters.period.month) }
+			: {}),
+	};
+
+	return Object.keys(resolved).length > 0 ? resolved : undefined;
 }

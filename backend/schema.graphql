@@ -51,6 +51,13 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar DateTimeISO
 
+input ListTransactionsFiltersInput {
+  categoryId: String
+  period: TransactionPeriodInput
+  search: String
+  type: TransactionType
+}
+
 input LoginInput {
   email: String!
   password: String!
@@ -79,7 +86,8 @@ type Query {
   getCategoriesSummary: CategoriesSummary!
   getDashboardSummary: DashboardSummary!
   getMe: UserProfileOutput!
-  getTransactions(page: Int! = 1, pageSize: Int! = 10): TransactionPage!
+  getTransactionPeriods: [TransactionPeriodOutput!]!
+  getTransactions(filters: ListTransactionsFiltersInput, page: Int! = 1, pageSize: Int! = 10): TransactionPage!
   health: String!
 }
 
@@ -109,6 +117,16 @@ type TransactionPage {
   page: Int!
   pageSize: Int!
   totalCount: Int!
+}
+
+input TransactionPeriodInput {
+  month: Int!
+  year: Int!
+}
+
+type TransactionPeriodOutput {
+  month: Int!
+  year: Int!
 }
 
 enum TransactionType {

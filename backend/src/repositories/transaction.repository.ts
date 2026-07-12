@@ -4,6 +4,8 @@ import type {
 	DbTransactionClient,
 	TransactionCreateProps,
 	TransactionFindManyProps,
+	TransactionListFilters,
+	TransactionPeriod,
 	TransactionUpdateProps,
 	TransactionWithCategory,
 } from '../db/db-transaction-client.interface.ts';
@@ -14,7 +16,8 @@ export interface TransactionRepository {
 	create(props: TransactionCreateProps): Promise<TransactionWithCategory>;
 	findById(id: string): Promise<TransactionWithCategory | null>;
 	findMany(userId: string, props: TransactionFindManyProps): Promise<TransactionWithCategory[]>;
-	count(userId: string): Promise<number>;
+	count(userId: string, filters?: TransactionListFilters): Promise<number>;
+	findDistinctPeriods(userId: string): Promise<TransactionPeriod[]>;
 	sumByType(userId: string, type: TransactionType, dateRange?: DateRange): Promise<number>;
 	groupByCategory(
 		userId: string,
@@ -42,8 +45,12 @@ export class DbTransactionRepository implements TransactionRepository {
 		return this.dbTransactionClient.transaction.findMany(userId, props);
 	}
 
-	async count(userId: string): Promise<number> {
-		return this.dbTransactionClient.transaction.count(userId);
+	async count(userId: string, filters?: TransactionListFilters): Promise<number> {
+		return this.dbTransactionClient.transaction.count(userId, filters);
+	}
+
+	async findDistinctPeriods(userId: string): Promise<TransactionPeriod[]> {
+		return this.dbTransactionClient.transaction.findDistinctPeriods(userId);
 	}
 
 	async sumByType(userId: string, type: TransactionType, dateRange?: DateRange): Promise<number> {

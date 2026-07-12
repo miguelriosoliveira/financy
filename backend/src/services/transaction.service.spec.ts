@@ -273,8 +273,9 @@ describe('TransactionService', () => {
 			expect(mockTransactionRepository.findMany).toHaveBeenCalledWith(USER_ID, {
 				skip: 0,
 				take: 10,
+				filters: undefined,
 			});
-			expect(mockTransactionRepository.count).toHaveBeenCalledWith(USER_ID);
+			expect(mockTransactionRepository.count).toHaveBeenCalledWith(USER_ID, undefined);
 			expect(result).toEqual({
 				items: [],
 				totalCount: 0,
@@ -292,7 +293,58 @@ describe('TransactionService', () => {
 			expect(mockTransactionRepository.findMany).toHaveBeenCalledWith(USER_ID, {
 				skip: 20,
 				take: 10,
+				filters: undefined,
 			});
+		});
+
+		it('forwards filters to findMany and count with the same resolved shape', async () => {
+			mockTransactionRepository.findMany.mockResolvedValueOnce([]);
+			mockTransactionRepository.count.mockResolvedValueOnce(0);
+
+			await transactionService.findPage(USER_ID, {
+				page: 1,
+				pageSize: 10,
+				filters: {
+					search: 'dinner',
+					type: TransactionType.EXPENSE,
+					categoryId: CATEGORY_ID,
+					period: { year: 2025, month: 11 },
+				},
+			});
+
+			const expectedFilters = {
+				search: 'dinner',
+				type: TransactionType.EXPENSE,
+				categoryId: CATEGORY_ID,
+				dateRange: {
+					start: new Date('2025-11-01T00:00:00.000Z'),
+					end: new Date('2025-12-01T00:00:00.000Z'),
+				},
+			};
+			expect(mockTransactionRepository.findMany).toHaveBeenCalledWith(USER_ID, {
+				skip: 0,
+				take: 10,
+				filters: expectedFilters,
+			});
+			expect(mockTransactionRepository.count).toHaveBeenCalledWith(USER_ID, expectedFilters);
+		});
+
+		it('omits empty filter objects from repository calls', async () => {
+			mockTransactionRepository.findMany.mockResolvedValueOnce([]);
+			mockTransactionRepository.count.mockResolvedValueOnce(0);
+
+			await transactionService.findPage(USER_ID, {
+				page: 1,
+				pageSize: 10,
+				filters: {},
+			});
+
+			expect(mockTransactionRepository.findMany).toHaveBeenCalledWith(USER_ID, {
+				skip: 0,
+				take: 10,
+				filters: undefined,
+			});
+			expect(mockTransactionRepository.count).toHaveBeenCalledWith(USER_ID, undefined);
 		});
 
 		it('maps repository rows and count into the page shape', async () => {
@@ -317,6 +369,21 @@ describe('TransactionService', () => {
 				page: 1,
 				pageSize: 10,
 			});
+		});
+	});
+
+	describe('findDistinctPeriods', () => {
+		it('delegates to the repository', async () => {
+			const periods = [
+				{ year: 2025, month: 12 },
+				{ year: 2025, month: 11 },
+			];
+			mockTransactionRepository.findDistinctPeriods.mockResolvedValueOnce(periods);
+
+			const result = await transactionService.findDistinctPeriods(USER_ID);
+
+			expect(mockTransactionRepository.findDistinctPeriods).toHaveBeenCalledWith(USER_ID);
+			expect(result).toEqual(periods);
 		});
 	});
 });

@@ -1,3 +1,4 @@
+import type { ListTransactionFiltersInputType } from '@financy/shared';
 import {
 	createTransactionSchema,
 	listTransactionsSchema,
@@ -5,7 +6,12 @@ import {
 } from '@financy/shared';
 import { Arg, Authorized, ID, Int, Mutation, Query, Resolver, UseMiddleware } from 'type-graphql';
 import { UserInfo } from '../auth/user-info.decorator.ts';
-import { CreateTransactionInput, UpdateTransactionInput } from '../dtos/input/transaction.input.ts';
+import {
+	CreateTransactionInput,
+	ListTransactionsFiltersInput,
+	UpdateTransactionInput,
+} from '../dtos/input/transaction.input.ts';
+import { TransactionPeriodOutput } from '../dtos/output/transaction-period.output.ts';
 import { Validate } from '../middlewares/validate.middleware.ts';
 import { TransactionModel } from '../models/transaction.model.ts';
 import { TransactionPage } from '../models/transaction-page.model.ts';
@@ -50,8 +56,15 @@ export class TransactionResolver {
 	async getTransactions(
 		@Arg('page', () => Int, { defaultValue: 1 }) page: number,
 		@Arg('pageSize', () => Int, { defaultValue: 10 }) pageSize: number,
+		@Arg('filters', () => ListTransactionsFiltersInput, { nullable: true })
+		filters: ListTransactionFiltersInputType | undefined,
 		@UserInfo() user: JwtPayload,
 	): Promise<TransactionPage> {
-		return this.transactionService.findPage(user.id, { page, pageSize });
+		return this.transactionService.findPage(user.id, { page, pageSize, filters });
+	}
+
+	@Query(() => [TransactionPeriodOutput])
+	async getTransactionPeriods(@UserInfo() user: JwtPayload): Promise<TransactionPeriodOutput[]> {
+		return this.transactionService.findDistinctPeriods(user.id);
 	}
 }

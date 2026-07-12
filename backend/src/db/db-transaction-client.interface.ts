@@ -20,6 +20,19 @@ export type TransactionWithCategory = TransactionModel & {
 export type TransactionFindManyProps = {
 	skip: number;
 	take: number;
+	filters?: TransactionListFilters;
+};
+
+export type TransactionListFilters = {
+	search?: string;
+	type?: TransactionType;
+	categoryId?: string;
+	dateRange?: DateRange;
+};
+
+export type TransactionPeriod = {
+	year: number;
+	month: number;
 };
 
 export type CategoryAggregation = {
@@ -38,7 +51,8 @@ export interface DbTransactionClient {
 		create(props: TransactionCreateProps): Promise<TransactionWithCategory>;
 		findById(id: string): Promise<TransactionWithCategory | null>;
 		findMany(userId: string, props: TransactionFindManyProps): Promise<TransactionWithCategory[]>;
-		count(userId: string): Promise<number>;
+		count(userId: string, filters?: TransactionListFilters): Promise<number>;
+		findDistinctPeriods(userId: string): Promise<TransactionPeriod[]>;
 		sumByType(userId: string, type: TransactionType, dateRange?: DateRange): Promise<number>;
 		groupByCategory(
 			userId: string,
