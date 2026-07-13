@@ -18,3 +18,12 @@ export class LoginOutput {
 	@Field(() => UserProfileOutput)
 	user!: UserProfileOutput;
 }
+
+@ObjectType()
+export class RefreshTokenOutput {
+	@Field(() => String)
+	token!: string;
+
+	@Field(() => String)
+	refreshToken!: string;
+}

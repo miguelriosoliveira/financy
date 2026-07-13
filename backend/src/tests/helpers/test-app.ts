@@ -28,7 +28,7 @@ export async function setupTestApp(): Promise<TestApp> {
 	const { app, dbClient, jwtService } = await initServer();
 
 	function authHeader(overrides?: Partial<JwtPayload>): string {
-		const token = jwtService.sign({
+		const token = jwtService.signAccessToken({
 			id: 'test-user-id',
 			email: 'test@example.com',
 			...overrides,

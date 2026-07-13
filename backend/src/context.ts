@@ -23,7 +23,7 @@ type ContextRequest = {
 export function buildContext(jwtService: JwtService) {
 	return async ({ req }: ContextRequest): Promise<GraphQLContext> => {
 		const token = extractBearerToken(req.headers.authorization);
-		const user = token ? jwtService.verify(token) : null;
+		const user = token ? jwtService.verifyAccessToken(token) : null;
 		return { user };
 	};
 }

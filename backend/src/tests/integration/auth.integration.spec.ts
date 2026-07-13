@@ -1,5 +1,8 @@
+import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { env } from '../../env.ts';
+import { TOKEN_TYPES } from '../../services/jwt.service.ts';
 import { setupTestApp, type TestApp } from '../helpers/test-app.ts';
 
 const REGISTER = /* GraphQL */ `
@@ -20,6 +23,24 @@ const LOGIN = /* GraphQL */ `
 				name
 				email
 			}
+		}
+	}
+`;
+
+const REFRESH_TOKEN = /* GraphQL */ `
+	mutation RefreshToken($data: RefreshTokenInput!) {
+		refreshToken(data: $data) {
+			token
+			refreshToken
+		}
+	}
+`;
+
+const GET_ME = /* GraphQL */ `
+	query GetMe {
+		getMe {
+			id
+			email
 		}
 	}
 `;
@@ -202,6 +223,134 @@ describe('Auth (integration)', () => {
 			expect(response.body.errors[0].extensions?.code).toBe('BAD_USER_INPUT');
 			expect(response.body.errors[0].extensions?.issues?.[field]).toBeDefined();
 			expect(response.body.data).toBeNull();
+		});
+	});
+
+	describe('refreshToken', () => {
+		async function registerAndLogin() {
+			const registerData = {
+				name: 'Ada Lovelace',
+				email: 'ada@example.com',
+				password: 'secret123',
+			};
+
+			const registerResponse = await request(ctx.app)
+				.post('/graphql')
+				.send({ query: REGISTER, variables: { data: registerData } });
+			expect(registerResponse.body.errors).toBeUndefined();
+
+			const loginResponse = await request(ctx.app)
+				.post('/graphql')
+				.send({
+					query: LOGIN,
+					variables: { data: { email: registerData.email, password: registerData.password } },
+				});
+			expect(loginResponse.body.errors).toBeUndefined();
+
+			return {
+				registerData,
+				login: loginResponse.body.data.login as {
+					token: string;
+					refreshToken: string;
+					user: { id: string; email: string };
+				},
+			};
+		}
+
+		it('rotates tokens and allows the refreshed access token on protected queries', async () => {
+			const { login } = await registerAndLogin();
+
+			const refreshResponse = await request(ctx.app)
+				.post('/graphql')
+				.send({
+					query: REFRESH_TOKEN,
+					variables: { data: { refreshToken: login.refreshToken } },
+				});
+
+			expect(refreshResponse.status).toBe(200);
+			expect(refreshResponse.body.errors).toBeUndefined();
+
+			const refreshed = refreshResponse.body.data.refreshToken;
+			expect(refreshed.token).toEqual(expect.any(String));
+			expect(refreshed.refreshToken).toEqual(expect.any(String));
+
+			const originalRefresh = jwt.decode(login.refreshToken) as jwt.JwtPayload;
+			const rotatedRefresh = jwt.decode(refreshed.refreshToken) as jwt.JwtPayload;
+			expect(rotatedRefresh.exp).toBe(originalRefresh.exp);
+
+			const meResponse = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', `Bearer ${refreshed.token}`)
+				.send({ query: GET_ME });
+
+			expect(meResponse.status).toBe(200);
+			expect(meResponse.body.errors).toBeUndefined();
+			expect(meResponse.body.data.getMe).toMatchObject({ email: login.user.email });
+		});
+
+		it('rejects using a refresh token as a bearer access token', async () => {
+			const { login } = await registerAndLogin();
+
+			const meResponse = await request(ctx.app)
+				.post('/graphql')
+				.set('Authorization', `Bearer ${login.refreshToken}`)
+				.send({ query: GET_ME });
+
+			expect(meResponse.status).toBe(200);
+			expect(meResponse.body.errors).toBeDefined();
+			expect(meResponse.body.errors[0].extensions?.code).toBe('UNAUTHENTICATED');
+		});
+
+		it('rejects refresh with an access token', async () => {
+			const { login } = await registerAndLogin();
+
+			const refreshResponse = await request(ctx.app)
+				.post('/graphql')
+				.send({
+					query: REFRESH_TOKEN,
+					variables: { data: { refreshToken: login.token } },
+				});
+
+			expect(refreshResponse.status).toBe(200);
+			expect(refreshResponse.body.errors).toBeDefined();
+			expect(refreshResponse.body.errors[0].extensions?.code).toBe('UNAUTHENTICATED');
+		});
+
+		it('rejects refresh with an expired refresh token', async () => {
+			const { login } = await registerAndLogin();
+			const expiredRefreshToken = jwt.sign(
+				{
+					id: login.user.id,
+					email: login.user.email,
+					tokenType: TOKEN_TYPES.REFRESH,
+				},
+				env.JWT_SECRET,
+				{ expiresIn: -1 },
+			);
+
+			const refreshResponse = await request(ctx.app)
+				.post('/graphql')
+				.send({
+					query: REFRESH_TOKEN,
+					variables: { data: { refreshToken: expiredRefreshToken } },
+				});
+
+			expect(refreshResponse.status).toBe(200);
+			expect(refreshResponse.body.errors).toBeDefined();
+			expect(refreshResponse.body.errors[0].extensions?.code).toBe('UNAUTHENTICATED');
+		});
+
+		it('rejects refresh with a malformed token', async () => {
+			const refreshResponse = await request(ctx.app)
+				.post('/graphql')
+				.send({
+					query: REFRESH_TOKEN,
+					variables: { data: { refreshToken: 'not-a-valid-token' } },
+				});
+
+			expect(refreshResponse.status).toBe(200);
+			expect(refreshResponse.body.errors).toBeDefined();
+			expect(refreshResponse.body.errors[0].extensions?.code).toBe('UNAUTHENTICATED');
 		});
 	});
 });

@@ -1,10 +1,16 @@
-import type { LoginInput, RegisterInput } from '../dtos/input/auth.input.ts';
-import type { LoginOutput, RegisterOutput } from '../dtos/output/auth.output.ts';
+import { ERROR_CODES } from '@financy/shared';
+import { GraphQLError } from 'graphql';
+import type { LoginInput, RefreshTokenInput, RegisterInput } from '../dtos/input/auth.input.ts';
+import type {
+	LoginOutput,
+	RefreshTokenOutput,
+	RegisterOutput,
+} from '../dtos/output/auth.output.ts';
 import { toUserProfileOutput } from '../mappers/user.mapper.ts';
 import type { UserModel } from '../models/user.model.ts';
 import type { UserRepository } from '../repositories/user.repository.ts';
 import type { HashService } from './hash.service.ts';
-import type { JwtService } from './jwt.service.ts';
+import { ACCESS_TOKEN_TTL_SECONDS, type JwtService } from './jwt.service.ts';
 
 export class AuthService {
 	constructor(
@@ -15,8 +21,8 @@ export class AuthService {
 
 	private generateTokens(user: UserModel): LoginOutput {
 		const { id, email } = user;
-		const token = this.jwtService.sign({ id, email }, 60 * 15); // 15min in seconds
-		const refreshToken = this.jwtService.sign({ id, email }, 60 * 60 * 24); // 24h in seconds
+		const token = this.jwtService.signAccessToken({ id, email }, ACCESS_TOKEN_TTL_SECONDS);
+		const refreshToken = this.jwtService.signRefreshToken({ id, email });
 		return { token, refreshToken, user: toUserProfileOutput(user) };
 	}
 
@@ -40,5 +46,36 @@ export class AuthService {
 			throw new Error('Invalid credentials');
 		}
 		return this.generateTokens(user);
+	}
+
+	async refreshToken({ refreshToken }: RefreshTokenInput): Promise<RefreshTokenOutput> {
+		const payload = this.jwtService.verifyRefreshToken(refreshToken);
+		if (!payload) {
+			throw new GraphQLError('Invalid refresh token', {
+				extensions: { code: ERROR_CODES.UNAUTHENTICATED },
+			});
+		}
+
+		const remainingTtl = payload.exp - Math.floor(Date.now() / 1000);
+		if (remainingTtl <= 0) {
+			throw new GraphQLError('Refresh token expired', {
+				extensions: { code: ERROR_CODES.UNAUTHENTICATED },
+			});
+		}
+
+		const user = await this.userRepository.findById(payload.id);
+		if (!user || user.email !== payload.email) {
+			throw new GraphQLError('Invalid refresh token', {
+				extensions: { code: ERROR_CODES.UNAUTHENTICATED },
+			});
+		}
+
+		return {
+			token: this.jwtService.signAccessToken({ id: user.id, email: user.email }),
+			refreshToken: this.jwtService.signRefreshToken(
+				{ id: user.id, email: user.email },
+				remainingTtl,
+			),
+		};
 	}
 }

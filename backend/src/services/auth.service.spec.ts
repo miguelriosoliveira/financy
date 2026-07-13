@@ -1,9 +1,11 @@
+import { ERROR_CODES } from '@financy/shared';
+import { GraphQLError } from 'graphql';
 import { beforeEach, describe, expect, it, type Mocked } from 'vitest';
 import type { UserRepository } from '../repositories/user.repository.ts';
 import { mockOf } from '../tests/helpers/mocks.ts';
 import { AuthService } from './auth.service.ts';
 import type { HashService } from './hash.service.ts';
-import type { JwtService } from './jwt.service.ts';
+import { ACCESS_TOKEN_TTL_SECONDS, type JwtService } from './jwt.service.ts';
 
 describe('AuthService', () => {
 	let authService: AuthService;
@@ -15,7 +17,8 @@ describe('AuthService', () => {
 		mockUserRepository = mockOf<UserRepository>();
 		mockHashService = mockOf<HashService>();
 		mockJwtService = mockOf<JwtService>();
-		mockJwtService.sign.mockReturnValue('mocked-jwt-token');
+		mockJwtService.signAccessToken.mockReturnValue('mocked-access-token');
+		mockJwtService.signRefreshToken.mockReturnValue('mocked-refresh-token');
 		authService = new AuthService(mockUserRepository, mockHashService, mockJwtService);
 	});
 
@@ -47,7 +50,8 @@ describe('AuthService', () => {
 				email: input.email,
 				password: hashedPassword,
 			});
-			expect(mockJwtService.sign).not.toHaveBeenCalled();
+			expect(mockJwtService.signAccessToken).not.toHaveBeenCalled();
+			expect(mockJwtService.signRefreshToken).not.toHaveBeenCalled();
 			expect(result).toEqual({ success: true });
 		});
 
@@ -64,7 +68,8 @@ describe('AuthService', () => {
 			// Act & Assert
 			await expect(authService.register(input)).rejects.toThrow('User already registered');
 			expect(mockHashService.hash).not.toHaveBeenCalled();
-			expect(mockJwtService.sign).not.toHaveBeenCalled();
+			expect(mockJwtService.signAccessToken).not.toHaveBeenCalled();
+			expect(mockJwtService.signRefreshToken).not.toHaveBeenCalled();
 			expect(mockUserRepository.create).not.toHaveBeenCalled();
 		});
 	});
@@ -90,10 +95,17 @@ describe('AuthService', () => {
 			// Assert
 			expect(mockUserRepository.findByEmail).toHaveBeenCalledWith(input.email);
 			expect(mockHashService.compare).toHaveBeenCalledWith(input.password, user.password);
-			expect(mockJwtService.sign).toHaveBeenCalledTimes(2);
+			expect(mockJwtService.signAccessToken).toHaveBeenCalledWith(
+				{ id: user.id, email: user.email },
+				ACCESS_TOKEN_TTL_SECONDS,
+			);
+			expect(mockJwtService.signRefreshToken).toHaveBeenCalledWith({
+				id: user.id,
+				email: user.email,
+			});
 			expect(result).toEqual({
-				token: 'mocked-jwt-token',
-				refreshToken: 'mocked-jwt-token',
+				token: 'mocked-access-token',
+				refreshToken: 'mocked-refresh-token',
 				user: {
 					id: user.id,
 					name: user.name,
@@ -110,7 +122,8 @@ describe('AuthService', () => {
 			// Act & Assert
 			await expect(authService.login(input)).rejects.toThrow('Invalid credentials');
 			expect(mockHashService.compare).not.toHaveBeenCalled();
-			expect(mockJwtService.sign).not.toHaveBeenCalled();
+			expect(mockJwtService.signAccessToken).not.toHaveBeenCalled();
+			expect(mockJwtService.signRefreshToken).not.toHaveBeenCalled();
 		});
 
 		it('should throw an error if the password is invalid', async () => {
@@ -130,7 +143,94 @@ describe('AuthService', () => {
 			// Act & Assert
 			await expect(authService.login(input)).rejects.toThrow('Invalid credentials');
 			expect(mockHashService.compare).toHaveBeenCalledWith(input.password, user.password);
-			expect(mockJwtService.sign).not.toHaveBeenCalled();
+			expect(mockJwtService.signAccessToken).not.toHaveBeenCalled();
+			expect(mockJwtService.signRefreshToken).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('refreshToken', () => {
+		const user = {
+			id: 'uuid-1234',
+			name: 'Test User',
+			email: 'test@example.com',
+			password: 'hashed-password',
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		};
+
+		it('rotates tokens while preserving the remaining refresh lifetime', async () => {
+			const remainingTtl = 3600;
+			mockJwtService.verifyRefreshToken.mockReturnValueOnce({
+				id: user.id,
+				email: user.email,
+				exp: Math.floor(Date.now() / 1000) + remainingTtl,
+			});
+			mockUserRepository.findById.mockResolvedValueOnce(user);
+
+			const result = await authService.refreshToken({ refreshToken: 'valid-refresh-token' });
+
+			expect(mockJwtService.verifyRefreshToken).toHaveBeenCalledWith('valid-refresh-token');
+			expect(mockUserRepository.findById).toHaveBeenCalledWith(user.id);
+			expect(mockJwtService.signAccessToken).toHaveBeenCalledWith({
+				id: user.id,
+				email: user.email,
+			});
+			expect(mockJwtService.signRefreshToken).toHaveBeenCalledWith(
+				{ id: user.id, email: user.email },
+				expect.any(Number),
+			);
+			const [, refreshTtl] = mockJwtService.signRefreshToken.mock.calls[0] ?? [];
+			expect(refreshTtl).toBeGreaterThan(remainingTtl - 2);
+			expect(refreshTtl).toBeLessThanOrEqual(remainingTtl);
+			expect(result).toEqual({
+				token: 'mocked-access-token',
+				refreshToken: 'mocked-refresh-token',
+			});
+		});
+
+		it('rejects an invalid refresh token', async () => {
+			mockJwtService.verifyRefreshToken.mockReturnValueOnce(null);
+
+			await expect(authService.refreshToken({ refreshToken: 'bad-token' })).rejects.toSatisfy(
+				(error: unknown) => {
+					expect(error).toBeInstanceOf(GraphQLError);
+					expect((error as GraphQLError).extensions?.code).toBe(ERROR_CODES.UNAUTHENTICATED);
+					return true;
+				},
+			);
+		});
+
+		it('rejects an expired refresh token', async () => {
+			mockJwtService.verifyRefreshToken.mockReturnValueOnce({
+				id: user.id,
+				email: user.email,
+				exp: Math.floor(Date.now() / 1000) - 1,
+			});
+
+			await expect(authService.refreshToken({ refreshToken: 'expired-token' })).rejects.toSatisfy(
+				(error: unknown) => {
+					expect(error).toBeInstanceOf(GraphQLError);
+					expect((error as GraphQLError).message).toBe('Refresh token expired');
+					return true;
+				},
+			);
+		});
+
+		it('rejects refresh when the user no longer exists', async () => {
+			mockJwtService.verifyRefreshToken.mockReturnValueOnce({
+				id: user.id,
+				email: user.email,
+				exp: Math.floor(Date.now() / 1000) + 3600,
+			});
+			mockUserRepository.findById.mockResolvedValueOnce(null);
+
+			await expect(
+				authService.refreshToken({ refreshToken: 'valid-refresh-token' }),
+			).rejects.toSatisfy((error: unknown) => {
+				expect(error).toBeInstanceOf(GraphQLError);
+				expect((error as GraphQLError).extensions?.code).toBe(ERROR_CODES.UNAUTHENTICATED);
+				return true;
+			});
 		});
 	});
 });

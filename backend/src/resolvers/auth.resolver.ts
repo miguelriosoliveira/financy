@@ -1,7 +1,7 @@
-import { loginSchema, registerSchema } from '@financy/shared';
+import { loginSchema, refreshTokenSchema, registerSchema } from '@financy/shared';
 import { Arg, Mutation, Resolver, UseMiddleware } from 'type-graphql';
-import { LoginInput, RegisterInput } from '../dtos/input/auth.input.js';
-import { LoginOutput, RegisterOutput } from '../dtos/output/auth.output.js';
+import { LoginInput, RefreshTokenInput, RegisterInput } from '../dtos/input/auth.input.js';
+import { LoginOutput, RefreshTokenOutput, RegisterOutput } from '../dtos/output/auth.output.js';
 import { Validate } from '../middlewares/validate.middleware.ts';
 import type { AuthService } from '../services/auth.service.ts';
 
@@ -25,5 +25,14 @@ export class AuthResolver {
 		data: LoginInput,
 	): Promise<LoginOutput> {
 		return this.authService.login(data);
+	}
+
+	@Mutation(() => RefreshTokenOutput)
+	@UseMiddleware(Validate(refreshTokenSchema))
+	async refreshToken(
+		@Arg('data', () => RefreshTokenInput)
+		data: RefreshTokenInput,
+	): Promise<RefreshTokenOutput> {
+		return this.authService.refreshToken(data);
 	}
 }

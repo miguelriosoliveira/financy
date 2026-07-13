@@ -5,9 +5,25 @@ function readFromStores(key: string) {
 	return localStorage.getItem(key) ?? sessionStorage.getItem(key);
 }
 
+function getActiveStore() {
+	if (localStorage.getItem(TOKEN_KEY) || localStorage.getItem(REFRESH_TOKEN_KEY)) {
+		return localStorage;
+	}
+	if (sessionStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(REFRESH_TOKEN_KEY)) {
+		return sessionStorage;
+	}
+	return null;
+}
+
 export function setTokens(token: string, refreshToken: string, rememberMe: boolean) {
 	clearTokens();
 	const store = rememberMe ? localStorage : sessionStorage;
+	store.setItem(TOKEN_KEY, token);
+	store.setItem(REFRESH_TOKEN_KEY, refreshToken);
+}
+
+export function updateTokens(token: string, refreshToken: string) {
+	const store = getActiveStore() ?? sessionStorage;
 	store.setItem(TOKEN_KEY, token);
 	store.setItem(REFRESH_TOKEN_KEY, refreshToken);
 }
