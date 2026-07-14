@@ -1,13 +1,7 @@
 import { SearchIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { FormField } from '@/components/form-field';
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/select';
 import type { TransactionPeriod } from '@/hooks/use-transaction-periods';
 import {
 	DEFAULT_TRANSACTION_FILTERS,
@@ -173,11 +167,11 @@ function FieldSelect({
 }: FieldSelectProps) {
 	return (
 		<div className="flex flex-col gap-2">
-			<label htmlFor={id} className="font-normal text-sm">
+			<label htmlFor={id} className="font-medium text-gray-700 text-sm">
 				{label}
 			</label>
 			<Select value={value} onValueChange={onValueChange} disabled={disabled}>
-				<SelectTrigger id={id} className="h-10 w-full py-0 font-light text-base">
+				<SelectTrigger id={id} size="sm" className="w-full font-light">
 					<SelectValue />
 				</SelectTrigger>
 				<SelectContent>{children}</SelectContent>

@@ -2,6 +2,12 @@
 
 Frontend development patterns for AI-assisted work.
 
+## shadcn UI components
+
+`src/components/ui/` is managed by shadcn installs. Do not edit by hand.
+
+When different defaults or behavior are needed, create or extend a wrapper in `src/components/` (e.g. `button.tsx` wraps `ui/button.tsx`). App code imports the wrapper, not the raw `ui/` primitive.
+
 ## Testing
 
 Tests use Vitest and Testing Library. Render components through the shared test provider helper rather than calling `render` directly, and mock GraphQL through Apollo's testing utilities.

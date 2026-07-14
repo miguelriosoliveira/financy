@@ -1,13 +1,10 @@
 import { type CreateTransactionInputType, createTransactionSchema } from '@financy/shared';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { CalendarIcon } from 'lucide-react';
 import { type ReactNode, type SubmitEvent, useEffect, useState } from 'react';
 import z from 'zod';
+import { DateField } from '@/components/date-field';
 import { FormField } from '@/components/form-field';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/select';
 import { SubmitButton } from '@/components/submit-button';
-import { Button as ShadcnButton } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import {
 	Dialog,
 	DialogContent,
@@ -17,15 +14,6 @@ import {
 	DialogTrigger,
 } from '@/components/ui/dialog';
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/components/ui/select';
-import { cn } from '@/lib/utils';
 import { TransactionTypeSelector, type TransactionTypeValue } from './transaction-type-selector';
 
 const TRANSACTION_FIELD_MESSAGES = {
@@ -96,7 +84,6 @@ export function TransactionFormDialog({
 	const [date, setDate] = useState<Date | undefined>();
 	const [amount, setAmount] = useState('');
 	const [categoryId, setCategoryId] = useState<string | undefined>();
-	const [datePickerOpen, setDatePickerOpen] = useState(false);
 	const [errors, setErrors] = useState<Partial<Record<'amount' | 'date' | 'categoryId', string>>>(
 		{},
 	);
@@ -163,41 +150,13 @@ export function TransactionFormDialog({
 						onChange={event => setDescription(event.target.value)}
 					/>
 					<div className="grid grid-cols-2 gap-4">
-						<Field>
-							<FieldLabel htmlFor={`${mode}-transaction-date`} className="font-normal">
-								Data
-							</FieldLabel>
-							<Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-								<PopoverTrigger asChild>
-									<ShadcnButton
-										id={`${mode}-transaction-date`}
-										type="button"
-										variant="outline"
-										className={cn(
-											'h-auto w-full justify-start py-3 font-light text-base',
-											!date && 'text-gray-400',
-										)}
-									>
-										<CalendarIcon className="size-4 text-gray-400" />
-										{date ? format(date, 'dd/MM/yyyy', { locale: ptBR }) : 'Selecione'}
-									</ShadcnButton>
-								</PopoverTrigger>
-								<PopoverContent className="w-auto p-0" align="start">
-									<Calendar
-										mode="single"
-										selected={date}
-										onSelect={selectedDate => {
-											setDate(selectedDate);
-											setDatePickerOpen(false);
-										}}
-										locale={ptBR}
-									/>
-								</PopoverContent>
-							</Popover>
-							{errors.date && (
-								<FieldDescription className="text-xs">{errors.date}</FieldDescription>
-							)}
-						</Field>
+						<DateField
+							label="Data"
+							id={`${mode}-transaction-date`}
+							value={date}
+							onChange={setDate}
+							error={errors.date}
+						/>
 						<FormField
 							label="Valor"
 							id={`${mode}-transaction-amount`}
@@ -218,7 +177,7 @@ export function TransactionFormDialog({
 						<Select value={categoryId ?? ''} onValueChange={setCategoryId}>
 							<SelectTrigger
 								id={`${mode}-transaction-category`}
-								className="h-auto w-full py-3.5 font-light text-base data-placeholder:text-gray-400"
+								className="w-full font-light data-placeholder:text-gray-400"
 							>
 								<SelectValue placeholder="Selecione" />
 							</SelectTrigger>
