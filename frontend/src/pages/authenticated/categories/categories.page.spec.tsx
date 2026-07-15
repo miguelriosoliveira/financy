@@ -107,7 +107,7 @@ function getHeaderCardContent(title: string) {
 
 function getCategoriesMock(categories: CategoryMock[] = []): MockLink.MockedResponse {
 	return {
-		request: { query: GET_CATEGORIES, variables: { includeStats: false } },
+		request: { query: GET_CATEGORIES, variables: { includeStats: true } },
 		result: {
 			data: {
 				getCategories: categories.map(category => ({
@@ -386,7 +386,7 @@ describe('CategoriesPage', () => {
 		expect(mockToastError).not.toHaveBeenCalled();
 	});
 
-	it('invalidates every cached category list after creating a category', async () => {
+	it('refetches the category list after creating a category', async () => {
 		const cache = new InMemoryCache();
 		cache.writeQuery({
 			query: GET_CATEGORIES,
@@ -420,12 +420,22 @@ describe('CategoriesPage', () => {
 			expect(mockToastSuccess).toHaveBeenCalledWith('Categoria criada com sucesso');
 		});
 
-		expect(
-			cache.readQuery({
-				query: GET_CATEGORIES,
-				variables: { includeStats: true },
-			}),
-		).toBeNull();
+		await waitFor(() => {
+			expect(
+				cache.readQuery({
+					query: GET_CATEGORIES,
+					variables: { includeStats: true },
+				}),
+			).toEqual({
+				getCategories: [
+					{
+						...OTHER_CATEGORY,
+						transactionCount: null,
+						totalAmount: null,
+					},
+				],
+			});
+		});
 	});
 
 	it('shows a field error and toast when the category name already exists', async () => {

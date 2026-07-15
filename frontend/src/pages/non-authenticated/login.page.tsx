@@ -107,9 +107,9 @@ export function LoginPage() {
 						Lembrar-me
 					</FieldLabel>
 				</Field>
-				<a href="/forgot-password" className="font-normal text-brand-base hover:underline">
+				<Button type="button" color="link" size="sm" className="h-auto p-0 hover:underline">
 					Recuperar senha
-				</a>
+				</Button>
 			</div>
 		</>
 	);

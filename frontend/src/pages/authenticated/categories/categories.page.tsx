@@ -69,7 +69,7 @@ type GetCategoriesSummaryResult = {
 };
 
 const CATEGORY_REFETCH_QUERIES = [
-	{ query: GET_CATEGORIES, variables: { includeStats: false } },
+	{ query: GET_CATEGORIES, variables: { includeStats: true } },
 	{ query: GET_CATEGORIES_SUMMARY },
 ] satisfies InternalRefetchQueryDescriptor[];
 
@@ -81,7 +81,7 @@ export function CategoriesPage() {
 	const [deletingTarget, setDeletingTarget] = useState<CategoryRow | null>(null);
 	const [createServerError, setCreateServerError] = useState<string>();
 	const [editServerError, setEditServerError] = useState<string>();
-	const { categories, loading: loadingCategories } = useCategories();
+	const { categories, loading: loadingCategories } = useCategories({ includeStats: true });
 	const { data: summaryData } = useQuery<GetCategoriesSummaryResult>(GET_CATEGORIES_SUMMARY);
 	const [createCategory, { loading: creatingCategory }] = useMutation(CREATE_CATEGORY);
 	const [editCategory, { loading: editingCategory }] = useMutation(EDIT_CATEGORY);
@@ -229,7 +229,7 @@ export function CategoriesPage() {
 							category={category.icon}
 							title={category.name}
 							description={category.description ?? ''}
-							itemCount={0}
+							itemCount={category.transactionCount ?? 0}
 							color={category.color}
 							onDelete={() => handleDeleteCategory(category)}
 							onEdit={() => handleEditCategory(category)}

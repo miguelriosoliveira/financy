@@ -114,16 +114,10 @@ O `pnpm install` também configura os hooks do Husky via script `prepare`.
 
 ### 2. Configurar variáveis de ambiente
 
-**Backend** — copie o exemplo e preencha os valores:
+**Backend** — copie o exemplo para `.env` (os valores já funcionam para desenvolvimento local):
 
 ```bash
 cp backend/.env.example backend/.env
-```
-
-```env
-PORT=3000
-JWT_SECRET=dev-secret-altere-em-producao
-DATABASE_URL=file:./dev.db
 ```
 
 **Frontend** — o exemplo já traz um valor funcional:
@@ -136,15 +130,7 @@ cp frontend/.env.example frontend/.env
 VITE_BACKEND_URL=http://localhost:3000/graphql
 ```
 
-**Testes do backend** — este arquivo não está no repositório, mas é obrigatório para rodar testes:
-
-```bash
-cat > backend/.env.test << 'EOF'
-PORT=4000
-JWT_SECRET=super_secret_test_key
-DATABASE_URL=file:./test.db
-EOF
-```
+O arquivo `backend/.env.test` já está versionado no repositório com valores seguros para a suíte de testes.
 
 ### 3. Criar o banco de dados
 
@@ -201,11 +187,7 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 
 ### Testes (`backend/.env.test`)
 
-| Variável | Obrigatória | Descrição |
-|----------|-------------|-----------|
-| `PORT` | Sim | Porta usada pelos testes de integração |
-| `JWT_SECRET` | Sim | Segredo para testes |
-| `DATABASE_URL` | Sim | Banco SQLite de teste (ex.: `file:./test.db`) |
+Arquivo versionado em `backend/.env.test` com valores seguros para a suíte de testes. Não é necessário criá-lo manualmente após o clone.
 
 ## Scripts
 
@@ -325,7 +307,6 @@ Autenticação via header `Authorization: Bearer <token>`.
 
 | Problema | Solução |
 |----------|---------|
-| `pnpm test` falha com `ENOENT` em `.env.test` | Crie `backend/.env.test` conforme a seção [Primeiros passos](#2-configurar-variáveis-de-ambiente) |
 | Erro ao instalar `better-sqlite3` | Instale a toolchain nativa de C++ (Xcode CLT no macOS) |
 | Backend não inicia | Verifique se `backend/.env` tem `PORT`, `JWT_SECRET` e `DATABASE_URL=file:./...` preenchidos |
 | Frontend não conecta ao backend | Confirme que `VITE_BACKEND_URL` aponta para a porta correta do backend |
