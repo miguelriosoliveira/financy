@@ -327,8 +327,11 @@ describe('CategoriesPage', () => {
 		const totalLabel = screen.getByText('Total de categorias');
 		const card = totalLabel.closest('[data-slot=card-content]');
 		expect(card).toHaveTextContent('2');
-		expect(getHeaderCardContent('Total de transações')).toHaveTextContent('5');
-		expect(getHeaderCardContent('Categoria mais utilizada')).toHaveTextContent('Alimentação');
+
+		await waitFor(() => {
+			expect(getHeaderCardContent('Total de transações')).toHaveTextContent('5');
+			expect(getHeaderCardContent('Categoria mais utilizada')).toHaveTextContent('Alimentação');
+		});
 	});
 
 	it('shows zero transactions and an empty most-used placeholder when there are no transactions', async () => {

@@ -1,5 +1,3 @@
-# Financy
-
 ![Financy logo](frontend/src/assets/logo.svg)
 
 Aplicação web de controle financeiro pessoal. Cada usuário gerencia suas próprias categorias, registra receitas e despesas, acompanha um dashboard com resumos mensais e mantém seu perfil — tudo em português, com formatação de moeda e datas em `pt-BR`.
@@ -313,7 +311,3 @@ Autenticação via header `Authorization: Bearer <token>`.
 | Tabelas não existem | Rode `pnpm --filter backend db:migrate` |
 | Pre-commit muito lento | O hook executa typecheck, build e test completos — comportamento esperado |
 | `schema.graphql` desatualizado | Rode `pnpm --filter backend schema:generate` após mudanças nos resolvers |
-
-## Licença
-
-Projeto privado — sem licença pública definida.
