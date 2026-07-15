@@ -29,6 +29,12 @@ Biome owns formatting and linting. Don't hand-format; let `pnpm lint` fix it.
 
 Don't edit generated or vendored code (e.g. shadcn UI components, Prisma-generated client, the generated GraphQL schema).
 
+## Package layout
+
+- `backend/` — GraphQL API
+- `frontend/` — React SPA
+- `backend/shared/` — Zod schemas and error codes (`@financy/shared` workspace package)
+
 ## Package-specific rules
 
 See `frontend/AGENTS.md` and `backend/AGENTS.md`.

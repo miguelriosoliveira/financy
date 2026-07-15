@@ -12,7 +12,7 @@ Tests use Vitest with separate unit and integration suites. Unit tests isolate s
 
 ## Validation
 
-Define schemas in the shared package and apply them via the validation middleware in resolvers. Throw domain errors as `GraphQLError` with a shared error code.
+Define schemas in `backend/shared` and apply them via the validation middleware in resolvers. Throw domain errors as `GraphQLError` with a shared error code.
 
 ## GraphQL schema
 

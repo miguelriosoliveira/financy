@@ -12,9 +12,19 @@ Aplicação web de controle financeiro pessoal. Cada usuário gerencia suas pró
 | **Categorias** | Categorias personalizadas com nome, ícone, cor e descrição |
 | **Perfil** | Atualizar nome, visualizar e-mail e encerrar sessão |
 
+## Estrutura de entrega (Rocketseat)
+
+```
+financy/
+├── backend/    # API GraphQL
+└── frontend/   # SPA React
+```
+
+O código compartilhado (schemas Zod e códigos de erro) fica em `backend/shared/` e é consumido pelos dois pacotes via workspace pnpm.
+
 ## Arquitetura
 
-Monorepo pnpm com três pacotes: `frontend`, `backend` e `shared`.
+Monorepo pnpm com pacotes `frontend`, `backend` e `@financy/shared` (em `backend/shared/`).
 
 ```mermaid
 flowchart LR
@@ -55,7 +65,7 @@ flowchart LR
 |--------|------------------|
 | [`frontend`](frontend) | Interface React com Apollo Client, React Router e Tailwind CSS |
 | [`backend`](backend) | API GraphQL com autenticação JWT, camadas de serviço e Prisma |
-| [`shared`](shared) | Schemas de validação Zod e códigos de erro compartilhados |
+| [`backend/shared`](backend/shared) | Schemas de validação Zod e códigos de erro compartilhados |
 
 ## Stack
 
@@ -70,20 +80,20 @@ flowchart LR
 
 ```
 financy/
-├── backend/          # API GraphQL (@financy/backend)
+├── backend/          # API GraphQL (backend)
+│   ├── shared/           # Schemas Zod e códigos de erro (@financy/shared)
 │   ├── src/
 │   │   ├── resolvers/    # Endpoints GraphQL
 │   │   ├── services/     # Regras de negócio
 │   │   ├── repositories/ # Acesso a dados
 │   │   └── db/prisma/    # Schema, migrations e client gerado
 │   └── schema.graphql    # SDL gerado (não editar manualmente)
-├── frontend/         # SPA React (@financy/frontend)
+├── frontend/         # SPA React (frontend)
 │   └── src/
 │       ├── pages/        # Páginas por rota
 │       ├── hooks/        # Hooks Apollo
 │       ├── components/   # Componentes da aplicação
 │       └── components/ui/ # Primitivos shadcn (não editar)
-├── shared/           # Schemas Zod e códigos de erro (@financy/shared)
 ├── AGENTS.md         # Convenções gerais do monorepo
 ├── biome.json        # Lint e formatação
 └── pnpm-workspace.yaml
@@ -279,7 +289,7 @@ O hook de pre-commit (Husky) roda lint-staged, typecheck, build e test em cada c
 - **Formatação:** Biome — rode `pnpm lint` em vez de formatar manualmente
 - **Test-first:** escreva testes antes da implementação
 - **Backend:** arquitetura resolver → service → repository → db client
-- **Validação:** schemas Zod no pacote `shared`, aplicados via middleware nos resolvers
+- **Validação:** schemas Zod em `backend/shared`, aplicados via middleware nos resolvers
 - **Código gerado — não editar manualmente:**
   - `backend/schema.graphql`
   - `backend/src/db/prisma/generated/`

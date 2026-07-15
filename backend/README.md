@@ -1,4 +1,4 @@
-# @financy/backend
+# backend
 
 API GraphQL do Financy — Express, Apollo Server, type-graphql, Prisma e SQLite.
 

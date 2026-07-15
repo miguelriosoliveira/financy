@@ -8,4 +8,4 @@ minimumReleaseAgeStrict: true
 packages:
   - 'backend'
   - 'frontend'
-  - 'shared'
+  - 'backend/shared'
