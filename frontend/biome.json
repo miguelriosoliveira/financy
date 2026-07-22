@@ -7,13 +7,7 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"includes": [
-			"**",
-			"!backend/schema.graphql",
-			"!backend/src/db/prisma",
-			"!frontend/src/components/ui",
-			"!frontend/components.json"
-		]
+		"includes": ["**", "!src/components/ui", "!components.json"]
 	},
 	"formatter": {
 		"enabled": true,
@@ -44,9 +38,6 @@
 		}
 	},
 	"javascript": {
-		"parser": {
-			"unsafeParameterDecoratorsEnabled": true
-		},
 		"formatter": {
 			"quoteStyle": "single",
 			"arrowParentheses": "asNeeded",
