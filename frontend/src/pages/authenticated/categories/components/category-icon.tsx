@@ -82,6 +82,10 @@ export const CATEGORY_LABELS: Record<CategoryType, string> = {
 	bills: 'Contas',
 };
 
+export function getCategoryIconClassName(color?: TagColor): string {
+	return iconTag({ color }).icon();
+}
+
 type Props = {
 	category: CategoryType;
 	color?: TagColor;

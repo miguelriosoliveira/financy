@@ -810,6 +810,8 @@ describe('Category (integration)', () => {
 						id
 						name
 						transactionCount
+						icon
+						color
 					}
 				}
 			}
@@ -936,6 +938,8 @@ describe('Category (integration)', () => {
 					id: foodId,
 					name: 'Food',
 					transactionCount: 4,
+					icon: 'tag',
+					color: '#000000',
 				},
 			});
 		});
@@ -983,6 +987,8 @@ describe('Category (integration)', () => {
 					id: alphaId,
 					name: 'Alpha',
 					transactionCount: 2,
+					icon: 'tag',
+					color: '#000000',
 				},
 			});
 		});
@@ -1034,6 +1040,8 @@ describe('Category (integration)', () => {
 					id: categoryA,
 					name: 'Food',
 					transactionCount: 1,
+					icon: 'tag',
+					color: '#000000',
 				},
 			});
 		});

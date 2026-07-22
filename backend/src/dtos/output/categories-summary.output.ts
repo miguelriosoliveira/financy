@@ -10,6 +10,12 @@ export class CategoryUsageSummary {
 
 	@Field(() => Int)
 	transactionCount!: number;
+
+	@Field(() => String)
+	icon!: string;
+
+	@Field(() => String)
+	color!: string;
 }
 
 @ObjectType()

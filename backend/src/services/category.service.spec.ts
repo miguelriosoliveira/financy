@@ -227,6 +227,8 @@ describe('CategoryService', () => {
 					id: foodCategory.id,
 					name: foodCategory.name,
 					transactionCount: 3,
+					icon: foodCategory.icon,
+					color: foodCategory.color,
 				},
 			});
 		});
@@ -261,6 +263,8 @@ describe('CategoryService', () => {
 				id: alphaCategory.id,
 				name: alphaCategory.name,
 				transactionCount: 2,
+				icon: alphaCategory.icon,
+				color: alphaCategory.color,
 			});
 		});
 
@@ -294,6 +298,8 @@ describe('CategoryService', () => {
 				id: categoryA.id,
 				name: categoryA.name,
 				transactionCount: 2,
+				icon: categoryA.icon,
+				color: categoryA.color,
 			});
 		});
 

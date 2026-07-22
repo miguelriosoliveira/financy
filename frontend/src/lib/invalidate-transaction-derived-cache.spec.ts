@@ -32,6 +32,8 @@ function createSeededCache() {
 					id: 'category-1',
 					name: 'Alimentação',
 					transactionCount: 3,
+					icon: 'food',
+					color: 'blue',
 				},
 			},
 		},

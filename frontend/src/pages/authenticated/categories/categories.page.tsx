@@ -1,14 +1,20 @@
 import { CombinedGraphQLErrors, gql, type InternalRefetchQueryDescriptor } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { ERROR_CODES, type UpdateCategoryInputType } from '@financy/shared';
-import { ArrowUpDownIcon, PlusIcon, TagIcon, UtensilsIcon } from 'lucide-react';
+import { ArrowUpDownIcon, PlusIcon, TagIcon } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { Button } from '@/components/button';
+import type { TagColor } from '@/components/tag';
 import { type CategoryRow, GET_CATEGORIES, useCategories } from '@/hooks/use-categories';
 import { invalidateCategoryCache } from '@/lib/invalidate-category-cache';
 import { GET_CATEGORIES_SUMMARY } from './categories.queries';
 import { CategoryCard } from './components/category-card';
+import {
+	CATEGORY_ICONS,
+	type CategoryType,
+	getCategoryIconClassName,
+} from './components/category-icon';
 import { CategoryFormDialog } from './components/category-form-dialog';
 import { CategoryHeaderCard } from './components/category-header-card';
 import { DeleteCategoryDialog } from './components/delete-category-dialog';
@@ -64,6 +70,8 @@ type GetCategoriesSummaryResult = {
 			id: string;
 			name: string;
 			transactionCount: number;
+			icon: CategoryType;
+			color: TagColor;
 		} | null;
 	};
 };
@@ -87,6 +95,11 @@ export function CategoriesPage() {
 	const [editCategory, { loading: editingCategory }] = useMutation(EDIT_CATEGORY);
 	const [deleteCategory, { loading: deletingCategory }] = useMutation(DELETE_CATEGORY);
 	const summary = summaryData?.getCategoriesSummary;
+	const mostUsedCategory = summary?.mostUsedCategory;
+	const MostUsedCategoryIcon = mostUsedCategory ? CATEGORY_ICONS[mostUsedCategory.icon] : TagIcon;
+	const mostUsedCategoryIconClassName = mostUsedCategory
+		? getCategoryIconClassName(mostUsedCategory.color)
+		: 'text-gray-700';
 
 	function handleCreateCategory(data: UpdateCategoryInputType) {
 		setCreateServerError(undefined);
@@ -211,9 +224,9 @@ export function CategoriesPage() {
 					value={String(summary?.transactionCount ?? 0)}
 				/>
 				<CategoryHeaderCard
-					icon={<UtensilsIcon className="text-blue-base" />}
+					icon={<MostUsedCategoryIcon className={mostUsedCategoryIconClassName} />}
 					title="Categoria mais utilizada"
-					value={summary?.mostUsedCategory?.name ?? '—'}
+					value={mostUsedCategory?.name ?? '—'}
 				/>
 			</div>
 

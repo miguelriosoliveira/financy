@@ -8,6 +8,8 @@ export const GET_CATEGORIES_SUMMARY = gql`
 				id
 				name
 				transactionCount
+				icon
+				color
 			}
 		}
 	}

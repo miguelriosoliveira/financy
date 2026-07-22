@@ -68,6 +68,8 @@ type CategoriesSummaryMock = {
 		id: string;
 		name: string;
 		transactionCount: number;
+		icon: string;
+		color: string;
 	} | null;
 };
 
@@ -82,6 +84,8 @@ const POPULATED_SUMMARY: CategoriesSummaryMock = {
 		id: 'uuid-1',
 		name: 'Alimentação',
 		transactionCount: 3,
+		icon: 'food',
+		color: 'blue',
 	},
 };
 

@@ -20,6 +20,8 @@ type CategoryModel {
 }
 
 type CategoryUsageSummary {
+  color: String!
+  icon: String!
   id: ID!
   name: String!
   transactionCount: Int!

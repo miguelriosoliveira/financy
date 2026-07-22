@@ -130,6 +130,8 @@ function pickMostUsedCategory(
 					id: category.id,
 					name: category.name,
 					transactionCount: aggregation.transactionCount,
+					icon: category.icon,
+					color: category.color,
 				} satisfies CategoryUsageSummary,
 			];
 		})
