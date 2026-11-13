@@ -13,6 +13,10 @@ export default defineConfig(({ mode }) => ({
 	test: {
 		globals: true,
 		environment: 'jsdom',
+		// Node 25+ exposes native storage globals that prevent Vitest from installing
+		// jsdom's browser storage, leaving localStorage undefined in tests. Disable
+		// Node's Web Storage in test workers so jsdom provides both storage APIs.
+		execArgv: ['--no-experimental-webstorage'],
 		setupFiles: ['./src/tests/setup.ts'],
 		env: loadEnv(mode, __dirname, 'VITE_'),
 		coverage: {

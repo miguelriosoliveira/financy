@@ -91,12 +91,14 @@ financy/
 
 ## Pré-requisitos
 
-- **Node.js** 20 LTS ou superior (recomendado)
+- **Node.js** 26 LTS ou superior
 - **pnpm** 9 ou superior
 - **Git**
 - **Toolchain nativa de C++** — necessária para compilar `better-sqlite3` (Xcode Command Line Tools no macOS, `build-essential` no Linux)
 
 Não é necessário Docker, PostgreSQL nem nenhum serviço externo. O banco é SQLite local.
+
+Se usar nvm, execute `nvm install` e `nvm use` na raiz do projeto para selecionar a versão definida em `.nvmrc`.
 
 ## Primeiros passos
 
