@@ -1,4 +1,4 @@
-# frontend
+# @financy/frontend
 
 Interface web do Financy — React 19, Vite, Apollo Client, Tailwind CSS e shadcn/ui.
 

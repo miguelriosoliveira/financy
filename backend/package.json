@@ -1,5 +1,5 @@
 {
-	"name": "backend",
+	"name": "@financy/backend",
 	"private": true,
 	"version": "1.0.0",
 	"type": "module",
@@ -16,13 +16,12 @@
 		"schema:generate": "tsx src/scripts/generate-schema.ts",
 		"db:generate": "prisma generate",
 		"db:migrate": "prisma migrate dev",
-		"db:studio": "prisma studio",
-		"lint": "biome check --write ."
+		"db:studio": "prisma studio"
 	},
 	"dependencies": {
 		"@apollo/server": "^5.5.1",
 		"@as-integrations/express5": "^1.1.2",
-		"@financy/shared": "file:./shared",
+		"@financy/shared": "workspace:*",
 		"@prisma/adapter-better-sqlite3": "^7.8.0",
 		"@prisma/client": "^7.8.0",
 		"bcryptjs": "^3.0.3",
@@ -36,7 +35,6 @@
 		"zod": "^4.4.3"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.5.3",
 		"@tsconfig/node-lts": "^24.0.0",
 		"@tsconfig/node-ts": "^23.6.4",
 		"@types/better-sqlite3": "^7.6.13",
@@ -50,7 +48,6 @@
 		"supertest": "^7.2.2",
 		"tsdown": "^0.22.5",
 		"tsx": "^4.22.4",
-		"typescript": "^7.0.2",
 		"vitest": "^4.1.10"
 	}
 }

@@ -10,13 +10,13 @@ import { type CategoryRow, GET_CATEGORIES, useCategories } from '@/hooks/use-cat
 import { invalidateCategoryCache } from '@/lib/invalidate-category-cache';
 import { GET_CATEGORIES_SUMMARY } from './categories.queries';
 import { CategoryCard } from './components/category-card';
+import { CategoryFormDialog } from './components/category-form-dialog';
+import { CategoryHeaderCard } from './components/category-header-card';
 import {
 	CATEGORY_ICONS,
 	type CategoryType,
 	getCategoryIconClassName,
 } from './components/category-icon';
-import { CategoryFormDialog } from './components/category-form-dialog';
-import { CategoryHeaderCard } from './components/category-header-card';
 import { DeleteCategoryDialog } from './components/delete-category-dialog';
 
 export const CREATE_CATEGORY = gql`

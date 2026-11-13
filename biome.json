@@ -7,7 +7,13 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"includes": ["**", "!src/components/ui", "!components.json"]
+		"includes": [
+			"**",
+			"!backend/schema.graphql",
+			"!backend/src/db/prisma",
+			"!frontend/src/components/ui",
+			"!frontend/components.json"
+		]
 	},
 	"formatter": {
 		"enabled": true,
@@ -38,6 +44,9 @@
 		}
 	},
 	"javascript": {
+		"parser": {
+			"unsafeParameterDecoratorsEnabled": true
+		},
 		"formatter": {
 			"quoteStyle": "single",
 			"arrowParentheses": "asNeeded",
